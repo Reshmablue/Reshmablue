@@ -52,7 +52,10 @@ client = genai.Client(api_key=API_KEY)
 # ==================================================
 
 def detect_language(text, explicit_lang=None):
-    """Detect whether language is Telugu, Hindi, or English."""
+    """
+    Detect target language.
+    If explicit_lang is provided from the UI, it takes 100% precedence.
+    """
     if explicit_lang:
         el = str(explicit_lang).lower()
         if "te" in el or "telugu" in el:
@@ -77,6 +80,7 @@ def construct_gemma_prompt(question, context, history=None, language=None):
     """
     Construct a precise, targeted prompt for Gemma based on the resolved context,
     conversation history, and preferred language (English, Telugu, Hindi).
+    Strictly forces the AI to reply ONLY in the selected language.
     """
     category = context.get("category", "general")
     data = context.get("data")
@@ -87,20 +91,41 @@ def construct_gemma_prompt(question, context, history=None, language=None):
 
     if lang_name == "Telugu":
         lang_instruction = (
-            "CRITICAL LANGUAGE RULE: The user is speaking in Telugu. You MUST respond completely in fluent, "
-            "respectful, natural Telugu (తెలుగు) using proper Telugu script. Use clear terminology suitable "
-            "for a Telugu grocery/retail shopkeeper (e.g., అమ్మకాలు for sales, లాభం for profit, సరుకు for stock, "
-            "ఖర్చులు for expenses, రూపాయలు for rupees)."
+            "ABSOLUTE MANDATORY LANGUAGE REQUIREMENT: TELUGU (తెలుగు) ONLY.\n"
+            "The shopkeeper has set their application language to TELUGU (తెలుగు).\n"
+            "REGARDLESS of what language the user's question was typed or spoken in (even if the user asked in English, e.g. 'How much did I sell today?' or 'Hello'), your ENTIRE response MUST be 100% in natural, respectful, fluent Telugu (తెలుగు) using proper Telugu script (తెలుగు లిపి).\n"
+            "DO NOT answer in English. DO NOT output English sentences or Latin transliterations. Everything MUST be in Telugu script.\n"
+            "Standard Telugu retail terminology:\n"
+            "- Sales = అమ్మకాలు\n"
+            "- Profit / Net Profit = లాభం / నికర లాభం\n"
+            "- Loss = నష్టం\n"
+            "- Expenses = ఖర్చులు\n"
+            "- Stock / Inventory = సరుకు / నిల్వలు / ఇన్వెంటరీ\n"
+            "- Bills / Invoices = బిల్లులు\n"
+            "- Rupees = రూపాయలు (₹)\n"
+            "- Low stock = తక్కువ స్టాక్"
         )
     elif lang_name == "Hindi":
         lang_instruction = (
-            "CRITICAL LANGUAGE RULE: The user is speaking in Hindi. You MUST respond completely in fluent, "
-            "respectful, natural Hindi (हिन्दी) using proper Devanagari script. Use clear terminology suitable "
-            "for an Indian grocery/retail shopkeeper (e.g., बिक्री for sales, मुनाफा for profit, स्टॉक for stock, "
-            "खर्चे for expenses, रुपये for rupees)."
+            "ABSOLUTE MANDATORY LANGUAGE REQUIREMENT: HINDI (हिन्दी) ONLY.\n"
+            "The shopkeeper has set their application language to HINDI (हिन्दी).\n"
+            "REGARDLESS of what language the user's question was typed or spoken in (even if the user asked in English, e.g. 'How much did I sell today?' or 'Hello'), your ENTIRE response MUST be 100% in natural, respectful, fluent Hindi (हिन्दी) using proper Devanagari script (देवनागरी लिपि).\n"
+            "DO NOT answer in English. DO NOT output English sentences or Latin transliterations. Everything MUST be in Devanagari script.\n"
+            "Standard Hindi retail terminology:\n"
+            "- Sales = बिक्री\n"
+            "- Profit / Net Profit = मुनाफा / लाभ / कुल लाभ\n"
+            "- Loss = नुकसान / घाटा\n"
+            "- Expenses = खर्चे\n"
+            "- Stock / Inventory = स्टॉक / माल\n"
+            "- Bills / Invoices = बिल\n"
+            "- Rupees = रुपये (₹)\n"
+            "- Low stock = कम स्टॉक"
         )
     else:
-        lang_instruction = "LANGUAGE RULE: Respond in clear, friendly, conversational English."
+        lang_instruction = (
+            "MANDATORY LANGUAGE REQUIREMENT: ENGLISH ONLY.\n"
+            "The shopkeeper has set their application language to English. Your entire response must be in clear, friendly, conversational English."
+        )
 
     base_rules = f"""
 You are an expert AI Shopkeeper Assistant for a local Indian retail shop.
@@ -136,7 +161,7 @@ CRITICAL RULES:
 "{question}"
 
 TASK:
-Greet the shopkeeper warmly, politely, and respectfully in {lang_name}. Introduce yourself as their AI Shopkeeper Assistant.
+Greet the shopkeeper warmly, politely, and respectfully EXCLUSIVELY in {lang_name} (native script). Introduce yourself as their AI Shopkeeper Assistant.
 Let them know in 1-2 friendly sentences that you are ready to assist with their shop's sales, profit, stock, expenses, or practical store management.
 Do NOT force raw database numbers into a simple greeting. Keep it welcoming and conversational.
 """
@@ -148,7 +173,7 @@ Do NOT force raw database numbers into a simple greeting. Keep it welcoming and 
 "{question}"
 
 TASK:
-Respond warmly and politely to the shopkeeper's thanks in {lang_name} (e.g. "You're welcome! / సంతోషం అండి! / आपका स्वागत है!"). Remind them you are always here to help manage their shop smoothly.
+Respond warmly and politely to the shopkeeper's thanks EXCLUSIVELY in {lang_name} (native script). Remind them you are always here to help manage their shop smoothly.
 """
 
     # Conversational fallback
@@ -158,7 +183,7 @@ Respond warmly and politely to the shopkeeper's thanks in {lang_name} (e.g. "You
 "{question}"
 
 TASK:
-Respond helpfully, politely, and conversationally in {lang_name} as their dedicated store assistant.
+Respond helpfully, politely, and conversationally EXCLUSIVELY in {lang_name} (native script) as their dedicated store assistant.
 """
 
     if is_ambiguous:
@@ -167,7 +192,7 @@ Respond helpfully, politely, and conversationally in {lang_name} as their dedica
 The user entered an ambiguous or incomplete request: "{question}".
 
 TASK:
-Politely ask the shopkeeper to clarify what information they would like to see in {lang_name}.
+Politely ask the shopkeeper to clarify what information they would like to see EXCLUSIVELY in {lang_name} (native script).
 Offer helpful options such as:
 1. Today's sales and profit
 2. This month's financial report
@@ -184,7 +209,7 @@ USER QUESTION:
 The user is asking for general store management or retail advice. No live database figures are required.
 
 TASK:
-Provide clear, actionable, friendly advice suitable for an Indian retail shopkeeper in {lang_name}.
+Provide clear, actionable, friendly advice suitable for an Indian retail shopkeeper EXCLUSIVELY in {lang_name} (native script).
 
 USER QUESTION:
 {question}
@@ -212,8 +237,8 @@ USER QUESTION:
 {extra_instruction}
 
 TASK:
-Interpret and explain the above business data directly answering the user's question in a clear, friendly, conversational tone in {lang_name}.
-If this is a follow-up to previous turns in the conversation history, reference the earlier context naturally.
+Interpret and explain the above business data directly answering the user's question in a clear, friendly, conversational tone EXCLUSIVELY in {lang_name} (using its native script).
+REMINDER: Regardless of what language the question was asked in, your ENTIRE reply MUST be in {lang_name}.
 """
 
 
@@ -225,10 +250,15 @@ def ask_gemma(prompt):
     """
     Query gemma-4-31b-it with structured role content and automatic fallback
     to gemma-4-26b-a4b-it if Google's 31B cluster experiences a temporary 500/503 server error.
+    Allows up to 30s request timeout per model to accommodate cloud generation latency.
     """
     content = types.Content(
         role="user",
         parts=[types.Part.from_text(text=prompt)]
+    )
+
+    call_config = types.GenerateContentConfig(
+        http_options={"timeout": 30000}
     )
 
     models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
@@ -237,7 +267,8 @@ def ask_gemma(prompt):
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=[content]
+                contents=[content],
+                config=call_config
             )
 
             if response and response.text:
@@ -255,33 +286,220 @@ def ask_gemma(prompt):
 # 4. DIRECT DATABASE FALLBACK (WHEN GEMMA SERVER EXPERIENCES 500/503)
 # ==================================================
 
-def format_direct_business_fallback(context, question):
+def format_direct_business_fallback(context, question, language="en-IN"):
     """
     If Google's Gemma server temporarily encounters 500/503 capacity errors,
     format and present the exact, verified MySQL numbers directly to the user
-    so they are never left without their business answer.
+    in their chosen language (Telugu, Hindi, or English).
     """
+    lang_name = detect_language(question, language)
     category = context.get("category", "general")
     data = context.get("data")
     is_advice = context.get("is_general_advice", False)
     is_ambiguous = context.get("is_ambiguous", False)
 
+    if lang_name == "Telugu":
+        prefix = "(గమనిక: డేటాబేస్ నుండి ధృవీకరించబడిన లైవ్ లెక్కలు నేరుగా అందించబడుతున్నాయి)\n\n"
+        if category in ("greeting", "casual", "pleasantry"):
+            return (
+                "నమస్కారం! నేను మీ AI షాప్‌కీపర్ అసిస్టెంట్‌ని.\n"
+                "ఈ రోజు అమ్మకాలు, లాభం, ఖర్చులు లేదా ఇన్వెంటరీ వివరాల గురించి నన్ను అడగండి. మీకు ఎలా సహాయపడగలను?"
+            )
+        if category in ("gratitude", "thanks"):
+            return "మీకు స్వాగతం! మీ వ్యాపారంలో మీకు సహాయం చేయడం నాకు సంతోషం. ఇంకేమైనా వివరాలు కావాలా?"
+        if is_ambiguous:
+            return (
+                "మీరు దేని గురించి తెలుసుకోవాలనుకుంటున్నారో దయచేసి వివరంగా అడగండి:\n"
+                "• ఈ రోజు అమ్మకాలు మరియు లాభం\n"
+                "• ఈ నెల ఆర్థిక నివేదిక\n"
+                "• తక్కువ స్టాక్ ఉన్న వస్తువులు\n"
+                "• నిర్దిష్ట వస్తువు ధర (ఉదా: 'బియ్యం ధర ఎంత?')"
+            )
+        if is_advice or data is None:
+            return (
+                "గూగుల్ జెమ్మా AI సర్వర్ ప్రస్తుతం ఎక్కువ రద్దీతో ఉంది. "
+                "దయచేసి మీ ప్రశ్నను కాసేపటి తర్వాత మళ్లీ అడగండి లేదా స్టాక్ మరియు అమ్మకాల వివరాల గురించి అడగండి."
+            )
+        if category == "financials":
+            period = data.get("period", "ఎంచుకున్న సమయం")
+            bills = data.get("number_of_bills", 0)
+            has_sales = data.get("has_sales", False)
+            if not has_sales or bills == 0:
+                return prefix + f"ఆర్థిక నివేదిక ({period}):\n• ఈ సమయంలో ఎలాంటి అమ్మకాలు నమోదు కాలేదు."
+            sales = data.get("total_sales_after_discounts", "0.00")
+            cogs = data.get("cost_of_goods_sold", "0.00")
+            gross = data.get("gross_profit", "0.00")
+            exp = data.get("operating_expenses", "0.00")
+            net = data.get("net_profit", "0.00")
+            is_profitable = data.get("is_profitable", True)
+            loss_str = "మీ వ్యాపారం లాభంలో ఉంది!" if is_profitable else "నికర నష్టం నమోదైంది."
+            return (
+                f"{prefix}ఆర్థిక సారాంశం ({period}):\n"
+                f"• స్థితి: {loss_str}\n"
+                f"• బిల్లుల సంఖ్య: {bills}\n"
+                f"• మొత్తం అమ్మకాలు: {sales}\n"
+                f"• కొనుగోలు ఖర్చు (COGS): {cogs}\n"
+                f"• స్థూల లాభం: {gross}\n"
+                f"• ఇతర ఖర్చులు: {exp}\n"
+                f"• నికర లాభం: {net}"
+            )
+        if category == "inventory":
+            total_items = data.get("total_active_products", 0)
+            total_stock = data.get("total_stock_units", 0)
+            low_count = data.get("low_stock_count", 0)
+            valuation = data.get("inventory_cost_value", "0.00")
+            return (
+                f"{prefix}ప్రస్తుత ఇన్వెంటరీ సారాంశం:\n"
+                f"• మొత్తం యాక్టివ్ వస్తువులు: {total_items}\n"
+                f"• నిల్వ ఉన్న మొత్తం యూనిట్లు: {total_stock}\n"
+                f"• తక్కువ స్టాక్ ఉన్న వస్తువులు: {low_count}\n"
+                f"• మొత్తం ఇన్వెంటరీ విలువ: {valuation}"
+            )
+        if category in ("low_stock", "restock"):
+            items = data.get("alerts", []) or data.get("low_stock_products", [])
+            if not items:
+                return prefix + "మంచి వార్త! ప్రస్తుతం తక్కువ స్టాక్ ఉన్న వస్తువులు ఏవీ లేవు."
+            lines = [f"{prefix}తక్కువ స్టాక్ హెచ్చరికలు ({len(items)} వస్తువులు):"]
+            for it in items:
+                lines.append(f"• {it.get('product_name')}: స్టాక్ {it.get('current_stock')} మిగిలింది (రీఆర్డర్ లెవెల్: {it.get('reorder_level', 'N/A')})")
+            return "\n".join(lines)
+        if category in ("best_sellers", "best_selling"):
+            items = data.get("top_products", []) or data.get("best_selling_products", [])
+            if not items:
+                return prefix + "అత్యధికంగా అమ్ముడైన వస్తువులను నిర్ణయించడానికి ఇంకా అమ్మకాలు నమోదు కాలేదు."
+            lines = [f"{prefix}అత్యధికంగా అమ్ముడైన వస్తువులు:"]
+            for it in items:
+                lines.append(f"• {it.get('product_name')}: {it.get('quantity_sold', it.get('total_quantity_sold', 0))} అమ్ముడయ్యాయి")
+            return "\n".join(lines)
+        if category == "price_lookup":
+            prod = data.get("product")
+            if not prod:
+                return prefix + "మీరు అడిగిన వస్తువు వివరాలు దొరకలేదు."
+            return (
+                f"{prefix}వస్తువు ధర మరియు స్టాక్ వివరాలు:\n"
+                f"• పేరు: {prod['product_name']}\n"
+                f"• అమ్మకపు ధర: రూ. {prod['selling_price']:.2f} ప్రతి {prod['unit']} కి\n"
+                f"• ప్రస్తుత స్టాక్: {prod['current_stock']} {prod['unit']}"
+            )
+        if category == "expenses":
+            total = data.get("total_expenses", "0.00")
+            return prefix + f"మొత్తం ఖర్చులు: {total}"
+        return prefix + "వివరాలు విజయవంతంగా తీసుకోబడ్డాయి."
+
+    elif lang_name == "Hindi":
+        prefix = "(नोट: लाइव डेटाबेस से सत्यापित आंकड़े सीधे प्रस्तुत किए जा रहे हैं)\n\n"
+        if category in ("greeting", "casual", "pleasantry"):
+            return (
+                "नमस्ते! मैं आपका AI शॉपकीपर असिस्टेंट हूँ।\n"
+                "आज की बिक्री, मुनाफे, खर्च या इन्वेंटरी के बारे में मुझसे पूछें। मैं आपकी क्या मदद कर सकता हूँ?"
+            )
+        if category in ("gratitude", "thanks"):
+            return "आपका स्वागत है! आपकी दुकान के प्रबंधन में सहायता करना मेरा कर्तव्य है। क्या आपको और कुछ जानना है?"
+        if is_ambiguous:
+            return (
+                "कृपया स्पष्ट करें कि आप क्या जानना चाहते हैं:\n"
+                "• आज की बिक्री और मुनाफा\n"
+                "• इस महीने का वित्तीय विवरण\n"
+                "• कम स्टॉक वाले उत्पाद\n"
+                "• किसी उत्पाद की कीमत (जैसे: 'चावल की कीमत क्या है?')"
+            )
+        if is_advice or data is None:
+            return (
+                "गूगल जेम्मा AI सेवा वर्तमान में अत्यधिक व्यस्त है। "
+                "कृपया कुछ क्षण बाद पुनः प्रयास करें या बिक्री और इन्वेंटरी के बारे में पूछें।"
+            )
+        if category == "financials":
+            period = data.get("period", "चयनित अवधि")
+            bills = data.get("number_of_bills", 0)
+            has_sales = data.get("has_sales", False)
+            if not has_sales or bills == 0:
+                return prefix + f"वित्तीय विवरण ({period}):\n• इस अवधि के लिए कोई बिक्री दर्ज नहीं हुई है।"
+            sales = data.get("total_sales_after_discounts", "0.00")
+            cogs = data.get("cost_of_goods_sold", "0.00")
+            gross = data.get("gross_profit", "0.00")
+            exp = data.get("operating_expenses", "0.00")
+            net = data.get("net_profit", "0.00")
+            is_profitable = data.get("is_profitable", True)
+            loss_str = "आपकी दुकान मुनाफे में है!" if is_profitable else "शुद्ध घाटा दर्ज किया गया है।"
+            return (
+                f"{prefix}वित्तीय विवरण ({period}):\n"
+                f"• स्थिति: {loss_str}\n"
+                f"• बिलों की संख्या: {bills}\n"
+                f"• कुल बिक्री: {sales}\n"
+                f"• खरीद लागत (COGS): {cogs}\n"
+                f"• सकल लाभ: {gross}\n"
+                f"• कुल खर्चे: {exp}\n"
+                f"• शुद्ध मुनाफा: {net}"
+            )
+        if category == "inventory":
+            total_items = data.get("total_active_products", 0)
+            total_stock = data.get("total_stock_units", 0)
+            low_count = data.get("low_stock_count", 0)
+            valuation = data.get("inventory_cost_value", "0.00")
+            return (
+                f"{prefix}वर्तमान स्टॉक विवरण:\n"
+                f"• सक्रिय उत्पाद: {total_items}\n"
+                f"• कुल स्टॉक इकाइयाँ: {total_stock}\n"
+                f"• कम स्टॉक वाले उत्पाद: {low_count}\n"
+                f"• कुल इन्वेंटरी लागत मूल्य: {valuation}"
+            )
+        if category in ("low_stock", "restock"):
+            items = data.get("alerts", []) or data.get("low_stock_products", [])
+            if not items:
+                return prefix + "अच्छी खबर! वर्तमान में कोई भी उत्पाद कम स्टॉक सीमा से नीचे नहीं है।"
+            lines = [f"{prefix}कम स्टॉक चेतावनी ({len(items)} उत्पाद):"]
+            for it in items:
+                lines.append(f"• {it.get('product_name')}: {it.get('current_stock')} उपलब्ध है (रीऑर्डर स्तर: {it.get('reorder_level', 'N/A')})")
+            return "\n".join(lines)
+        if category in ("best_sellers", "best_selling"):
+            items = data.get("top_products", []) or data.get("best_selling_products", [])
+            if not items:
+                return prefix + "सबसे ज्यादा बिकने वाले उत्पाद निर्धारित करने के लिए अभी पर्याप्त बिक्री नहीं है।"
+            lines = [f"{prefix}सबसे ज्यादा बिकने वाले उत्पाद:"]
+            for it in items:
+                lines.append(f"• {it.get('product_name')}: {it.get('quantity_sold', it.get('total_quantity_sold', 0))} बेचे गए")
+            return "\n".join(lines)
+        if category == "price_lookup":
+            prod = data.get("product")
+            if not prod:
+                return prefix + "उत्पाद नहीं मिला।"
+            return (
+                f"{prefix}उत्पाद मूल्य और स्टॉक जानकारी:\n"
+                f"• नाम: {prod['product_name']}\n"
+                f"• बिक्री मूल्य: रु {prod['selling_price']:.2f} प्रति {prod['unit']}\n"
+                f"• वर्तमान स्टॉक: {prod['current_stock']} {prod['unit']}"
+            )
+        if category == "expenses":
+            total = data.get("total_expenses", "0.00")
+            return prefix + f"कुल खर्चे: {total}"
+        return prefix + "विवरण सफलतापूर्वक लोड हुआ।"
+
+    # Default: English
+    prefix = "(Note: Displaying verified live database records directly)\n\n"
+
+    if category in ("greeting", "casual", "pleasantry"):
+        return (
+            "Namaste! I am your AI Shopkeeper Assistant.\n"
+            "Ask me about today's sales, profit, expenses, or inventory status. How can I help you today?"
+        )
+
+    if category in ("gratitude", "thanks"):
+        return "You are welcome! Always happy to assist with your store operations. Let me know if you need anything else!"
+
     if is_ambiguous:
         return (
-            "I'm not quite sure what you're asking. Could you please specify?\n"
+            "Please clarify what information you would like to view:\n"
             "• Today's sales and profit\n"
-            "• Monthly financial summary\n"
-            "• Low stock alerts\n"
-            "• Price of a specific product (e.g., 'Price of Rice')"
+            "• Monthly financial performance\n"
+            "• Low-stock items to reorder\n"
+            "• Product price lookup (e.g. 'Price of Rice')"
         )
 
     if is_advice or data is None:
         return (
-            "Sorry, the Google Gemma AI service is temporarily experiencing high server load. "
-            "Please try asking your retail advice question again in a moment."
+            "Google Gemma AI is temporarily experiencing high server load. "
+            "Please ask your store advice question again in a moment, or inquire about verified sales and stock records."
         )
-
-    prefix = "(Google Gemma AI is temporarily experiencing high server load; displaying verified database records directly)\n\n"
 
     if category == "financials":
         period = data.get("period", "Selected Period")
@@ -420,7 +638,7 @@ def ask_shopkeeper_assistant(question, connection=None, history=None, language=N
         # Query Gemma
         response_text = ask_gemma(prompt)
         if not response_text:
-            return format_direct_business_fallback(context, question)
+            return format_direct_business_fallback(context, question, language=language)
         return response_text
 
     finally:

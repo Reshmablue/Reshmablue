@@ -11,11 +11,12 @@ import json
 import os
 
 # Ensure UTF-8 output
-if sys.stdout.encoding != "utf-8":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+for s in [sys.stdout, sys.stderr]:
+    if hasattr(s, "reconfigure"):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 
 from web_app import app
 

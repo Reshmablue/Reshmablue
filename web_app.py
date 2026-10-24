@@ -1164,21 +1164,26 @@ def api_chat():
     if not message:
         return jsonify({"status": "error", "message": "Question cannot be empty."}), 400
 
-    language = str(data.get("language", "en-IN")).strip()
+    lang_req = str(data.get("language", "en-IN")).strip().lower()
+    target_lang = "en-IN"
+    if "te" in lang_req or "telugu" in lang_req:
+        target_lang = "te-IN"
+    elif "hi" in lang_req or "hindi" in lang_req:
+        target_lang = "hi-IN"
+
     history = data.get("history", [])
 
     conn = None
     try:
         conn = get_db()
-        answer = ask_shopkeeper_assistant(message, connection=conn, history=history, language=language)
-        detected = detect_language(answer, language)
-        speech_text = clean_speech_text(answer, language=detected)
+        answer = ask_shopkeeper_assistant(message, connection=conn, history=history, language=target_lang)
+        speech_text = clean_speech_text(answer, language=target_lang)
         return jsonify({
             "status": "success",
             "question": message,
             "response": answer,
             "speech_text": speech_text,
-            "language": detected
+            "language": target_lang
         })
 
     except Exception as e:
@@ -1196,8 +1201,8 @@ def api_voice_process():
     """
     Dedicated voice-to-voice processing endpoint:
     Receives transcribed user speech, resolves business facts via safe parameterized queries,
-    prompts Gemma for a natural spoken answer, and returns both formatted display_text
-    and audio-clean speech_text with playback metadata.
+    prompts Gemma for a natural spoken answer strictly in the requested language,
+    and returns both formatted display_text and audio-clean speech_text with playback metadata.
     """
     data = request.get_json(force=True, silent=True)
     if not data:
@@ -1210,13 +1215,20 @@ def api_voice_process():
             "message": "Transcript cannot be empty."
         }), 400
 
-    language = str(data.get("language", "en-IN")).strip()
+    lang_req = str(data.get("language", "en-IN")).strip().lower()
+    target_lang = "en-IN"
+    if "te" in lang_req or "telugu" in lang_req:
+        target_lang = "te-IN"
+    elif "hi" in lang_req or "hindi" in lang_req:
+        target_lang = "hi-IN"
+
     history = data.get("history", [])
 
     conn = None
     try:
         conn = get_db()
-        result = process_voice_query(transcript, language=language, connection=conn, history=history)
+        result = process_voice_query(transcript, language=target_lang, connection=conn, history=history)
+        result["language"] = target_lang
         status_code = 200 if result.get("status") == "success" else 400
         return jsonify(result), status_code
 

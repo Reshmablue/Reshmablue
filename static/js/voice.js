@@ -18,6 +18,10 @@ class VoiceAssistant {
     this.onStatusChange = options.onStatusChange || null;
     this.onError = options.onError || null;
 
+    // Single-channel audio playback tracking to prevent duplicate simultaneous voices
+    this.currentAudio = null;
+    this.playbackSessionId = 0;
+
     // Initialize Speech Recognition
     this.initRecognition();
   }
@@ -158,8 +162,9 @@ class VoiceAssistant {
   }
 
   /**
-   * Speak a given text response using Server-side gTTS with authentic regional accents
-   * and automatic fallback to browser SpeechSynthesis.
+   * Speak a given text response using Server-side gTTS with authentic regional accents.
+   * Strictly enforces a single audio channel: stops any existing audio, cancels browser synthesis,
+   * and prevents Telugu and English from playing concurrently or falling back to English voice.
    */
   speakText(text, metadata = {}, onEndCallback = null) {
     if (typeof metadata === "function") {
@@ -172,10 +177,13 @@ class VoiceAssistant {
       return;
     }
 
-    // Stop any current playback or synthesis
+    // Stop any ongoing speech or audio playback immediately
     this.stopSpeaking();
 
-    // Clean markdown formatting for smooth speech
+    // Unique session ID to invalidate any lagging promises or events
+    const sessionId = this.playbackSessionId;
+
+    // Clean markdown formatting for smooth, clear pronunciation
     const cleanText = text
       .replace(/[*#_`~>]/g, "")
       .replace(/\n+/g, ". ")
@@ -183,7 +191,7 @@ class VoiceAssistant {
 
     const lang = metadata.language || this.selectedLanguage || "en-IN";
 
-    // 1. First attempt: High-fidelity regional audio via Flask /api/tts (gTTS)
+    // 1. Primary Engine: High-fidelity regional audio via Flask /api/tts (gTTS)
     try {
       const audioUrl = `/api/tts?lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(cleanText)}`;
       const audio = new Audio(audioUrl);
@@ -194,6 +202,7 @@ class VoiceAssistant {
       }
 
       audio.onended = () => {
+        if (this.playbackSessionId !== sessionId) return;
         this.currentAudio = null;
         if (this.onStatusChange) {
           this.onStatusChange("idle", "Finished speaking.");
@@ -202,69 +211,123 @@ class VoiceAssistant {
       };
 
       audio.onerror = (e) => {
-        console.warn("Server TTS audio error, falling back to Web SpeechSynthesis:", e);
+        if (this.playbackSessionId !== sessionId) return;
+        console.warn("[Voice] Server TTS audio error, checking browser fallback:", e);
         this.currentAudio = null;
-        this.fallbackWebSpeech(cleanText, lang, onEndCallback);
+        this.fallbackWebSpeech(cleanText, lang, sessionId, onEndCallback);
       };
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          console.warn("Audio autoplay blocked or failed, falling back to Web Speech:", err);
-          this.fallbackWebSpeech(cleanText, lang, onEndCallback);
+          if (this.playbackSessionId !== sessionId) return;
+          if (err.name === "AbortError") {
+            // Cancelled because newer speech started; do nothing
+            return;
+          }
+          console.warn("[Voice] Audio play promise rejected:", err.name, err.message);
+          // If autoplay is blocked by browser gesture policy, do NOT trigger English synthesis for Telugu!
+          if (err.name === "NotAllowedError") {
+            this.currentAudio = null;
+            if (this.onStatusChange) {
+              this.onStatusChange("idle", "Click '🔊 Read Aloud' to hear spoken response.");
+            }
+            if (onEndCallback) onEndCallback();
+            return;
+          }
+          this.currentAudio = null;
+          this.fallbackWebSpeech(cleanText, lang, sessionId, onEndCallback);
         });
       }
       return;
     } catch (err) {
-      console.warn("Server TTS exception, falling back to Web Speech:", err);
-      this.fallbackWebSpeech(cleanText, lang, onEndCallback);
+      if (this.playbackSessionId !== sessionId) return;
+      console.warn("[Voice] Server TTS exception:", err);
+      this.fallbackWebSpeech(cleanText, lang, sessionId, onEndCallback);
     }
   }
 
-  fallbackWebSpeech(cleanText, lang, onEndCallback) {
+  /**
+   * Browser SpeechSynthesis fallback with strict language matching.
+   * If user selected Telugu or Hindi and no native voice is installed in the browser,
+   * NEVER speak using English voice.
+   */
+  fallbackWebSpeech(cleanText, lang, sessionId, onEndCallback) {
+    if (this.playbackSessionId !== sessionId) return;
+    this.currentAudio = null;
+
     if (!("speechSynthesis" in window)) {
-      if (this.onStatusChange) this.onStatusChange("idle", "Speech synthesis not supported.");
+      if (this.onStatusChange) this.onStatusChange("idle", "Speech synthesis not supported in this browser.");
       if (onEndCallback) onEndCallback();
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = lang;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+    const langLower = (lang || "").toLowerCase();
+    const isTelugu = langLower.includes("te") || langLower.includes("telugu");
+    const isHindi = langLower.includes("hi") || langLower.includes("hindi");
 
-    const voices = window.speechSynthesis.getVoices();
-    if (voices && voices.length > 0) {
-      const targetLang = utterance.lang;
-      const langPrefix = targetLang.split("-")[0];
-      const matchedVoice = voices.find(v => v.lang.toLowerCase() === targetLang.toLowerCase()) ||
-                           voices.find(v => v.lang.toLowerCase().startsWith(targetLang.toLowerCase())) ||
-                           voices.find(v => v.lang.toLowerCase().startsWith(langPrefix.toLowerCase())) ||
-                           voices.find(v => v.default);
-      if (matchedVoice) {
-        utterance.voice = matchedVoice;
+    const voices = window.speechSynthesis.getVoices() || [];
+    let matchedVoice = null;
+
+    if (isTelugu) {
+      matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith("te"));
+      if (!matchedVoice) {
+        console.warn("[Voice] No browser Telugu voice installed. Suppressed English voice fallback to prevent duplicate or garbled audio.");
+        if (this.onStatusChange) {
+          this.onStatusChange("idle", "Telugu speech requires online audio. Text response is displayed.");
+        }
+        if (onEndCallback) onEndCallback();
+        return;
       }
+    } else if (isHindi) {
+      matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith("hi"));
+      if (!matchedVoice) {
+        console.warn("[Voice] No browser Hindi voice installed. Suppressed English voice fallback.");
+        if (this.onStatusChange) {
+          this.onStatusChange("idle", "Hindi speech requires online audio. Text response is displayed.");
+        }
+        if (onEndCallback) onEndCallback();
+        return;
+      }
+    } else {
+      matchedVoice = voices.find(v => v.lang.toLowerCase() === "en-in") ||
+                     voices.find(v => v.lang.toLowerCase().startsWith("en-in")) ||
+                     voices.find(v => v.lang.toLowerCase().startsWith("en")) ||
+                     voices.find(v => v.default);
     }
 
-    if (this.onStatusChange) {
-      this.onStatusChange("speaking", "Assistant is speaking response...");
+    try {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = lang;
+      if (matchedVoice) utterance.voice = matchedVoice;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        if (this.playbackSessionId !== sessionId) return;
+        if (this.onStatusChange) {
+          this.onStatusChange("idle", "Finished speaking.");
+        }
+        if (onEndCallback) onEndCallback();
+      };
+
+      utterance.onerror = (e) => {
+        if (this.playbackSessionId !== sessionId) return;
+        if (this.onStatusChange) {
+          this.onStatusChange("idle", "Speech stopped.");
+        }
+        if (onEndCallback) onEndCallback();
+      };
+
+      if (this.onStatusChange) {
+        this.onStatusChange("speaking", "Assistant is speaking response...");
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn("[Voice] Web SpeechSynthesis error:", e);
+      if (onEndCallback) onEndCallback();
     }
-
-    utterance.onend = () => {
-      if (this.onStatusChange) {
-        this.onStatusChange("idle", "Finished speaking.");
-      }
-      if (onEndCallback) onEndCallback();
-    };
-
-    utterance.onerror = (e) => {
-      if (this.onStatusChange) {
-        this.onStatusChange("idle", "Speech stopped.");
-      }
-      if (onEndCallback) onEndCallback();
-    };
-
-    window.speechSynthesis.speak(utterance);
   }
 
   isSpeaking() {
@@ -272,18 +335,27 @@ class VoiceAssistant {
   }
 
   stopSpeaking() {
+    // Invalidate active session so pending callbacks are discarded
+    this.playbackSessionId = (this.playbackSessionId || 0) + 1;
+
     if (this.currentAudio) {
       try {
+        this.currentAudio.onended = null;
+        this.currentAudio.onerror = null;
+        this.currentAudio.oncanplay = null;
         this.currentAudio.pause();
         this.currentAudio.currentTime = 0;
+        this.currentAudio.src = "";
       } catch (e) {}
       this.currentAudio = null;
     }
+
     if ("speechSynthesis" in window) {
       try {
         window.speechSynthesis.cancel();
       } catch (e) {}
     }
+
     if (this.onStatusChange) {
       this.onStatusChange("idle", "Speech stopped.");
     }

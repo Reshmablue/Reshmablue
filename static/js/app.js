@@ -135,15 +135,9 @@ function switchView(viewName) {
   } else if (viewName === "dashboard") {
     loadDashboardData();
   } else if (viewName === "voice") {
-    if (voiceAssistant && !state.hasGreetedInVoice) {
-      state.hasGreetedInVoice = true;
-      setTimeout(() => voiceAssistant.greet(), 250);
-    }
+    // Voice view opened - keep idle until user taps microphone or Greet Me
   } else if (viewName === "chatbot") {
-    if (voiceAssistant && !state.hasGreetedInChat) {
-      state.hasGreetedInChat = true;
-      setTimeout(() => voiceAssistant.greet(), 250);
-    }
+    // Chatbot view opened - welcome bubble is rendered, speech starts only on user action
   }
 }
 
@@ -1806,6 +1800,99 @@ async function generateReport() {
 let chatHistory = [];
 let isChatProcessing = false;
 
+function setAppLanguage(langCode, updateServer = false) {
+  if (!langCode) return;
+  state.selectedLanguage = langCode;
+  try {
+    localStorage.setItem("shopkeeper_language", langCode);
+  } catch (e) {}
+
+  // Sync all language dropdowns across the application
+  const chatSelect = document.getElementById("chatLangSelect");
+  const voiceSelect = document.getElementById("voiceLangSelect");
+  const settingSelect = document.getElementById("settingVoiceLanguage");
+
+  if (chatSelect && chatSelect.value !== langCode) chatSelect.value = langCode;
+  if (voiceSelect && voiceSelect.value !== langCode) voiceSelect.value = langCode;
+  if (settingSelect && settingSelect.value !== langCode) settingSelect.value = langCode;
+
+  // Update voice assistant language
+  if (voiceAssistant) {
+    voiceAssistant.setLanguage(langCode);
+  }
+
+  // Update welcome bubble in chat if no custom messages sent yet
+  updateChatWelcomeMessage(langCode);
+
+  const langNames = { "te-IN": "Telugu (తెలుగు)", "hi-IN": "Hindi (हिन्दी)", "en-IN": "English" };
+  showToast(`Assistant language set to ${langNames[langCode] || langCode}. AI will answer strictly in this language.`, "info");
+}
+
+function updateChatWelcomeMessage(langCode) {
+  if (chatHistory && chatHistory.length > 0) return;
+  const messagesBox = document.getElementById("chatMessages");
+  if (!messagesBox) return;
+
+  if (langCode === "te-IN") {
+    messagesBox.innerHTML = `
+      <div class="chat-bubble bot-bubble">
+        <div class="bubble-avatar">🤖</div>
+        <div class="bubble-content">
+          <p><strong>నమస్కారం!</strong> నేను మీ AI షాప్‌కీపర్ అసిస్టెంట్‌ని (Google Gemma ఆధారితం).</p>
+          <p>భాష తెలుగుగా ఎంపిక చేయబడింది. మీరు ఏ భాషలో అడిగినా, సమాధానం <strong>తెలుగులోనే</strong> వస్తుంది. మీ లైవ్ స్టోర్ రికార్డుల నుండి ఏదైనా వివరాలు నన్ను అడగండి:</p>
+          <ul>
+            <li><em>"ఈ రోజు అమ్మకాలు ఎంత?"</em></li>
+            <li><em>"ఈ నెల నా స్థూల మరియు నికర లాభం ఎంత?"</em></li>
+            <li><em>"ఏ వస్తువు ఎక్కువగా అమ్ముడైంది?"</em></li>
+            <li><em>"ఏ సరుకు తక్కువగా ఉంది, రీఆర్డర్ చేయాలి?"</em></li>
+          </ul>
+          <div class="bubble-actions mt-2">
+            <button class="btn btn-xs btn-outline chat-speak-btn" type="button" onclick="voiceAssistant?.greet('te-IN')">🔊 గ్రీటింగ్ వినండి (Telugu)</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (langCode === "hi-IN") {
+    messagesBox.innerHTML = `
+      <div class="chat-bubble bot-bubble">
+        <div class="bubble-avatar">🤖</div>
+        <div class="bubble-content">
+          <p><strong>नमस्ते!</strong> मैं आपका AI शॉपकीपर असिस्टेंट हूँ (Google Gemma द्वारा संचालित)।</p>
+          <p>भाषा हिन्दी चुनी गई है। आप किसी भी भाषा में पूछें, उत्तर <strong>हिन्दी में ही</strong> मिलेगा। अपनी दुकान के लाइव रिकॉर्ड से कोई भी सवाल पूछें:</p>
+          <ul>
+            <li><em>"आज की कुल बिक्री कितनी हुई?"</em></li>
+            <li><em>"इस महीने मेरा मुनाफा कितना है?"</em></li>
+            <li><em>"सबसे ज्यादा बिकने वाला सामान कौन सा है?"</em></li>
+            <li><em>"किस सामान का स्टॉक कम है और मंगाना है?"</em></li>
+          </ul>
+          <div class="bubble-actions mt-2">
+            <button class="btn btn-xs btn-outline chat-speak-btn" type="button" onclick="voiceAssistant?.greet('hi-IN')">🔊 अभिवादन सुनें (Hindi)</button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    messagesBox.innerHTML = `
+      <div class="chat-bubble bot-bubble">
+        <div class="bubble-avatar">🤖</div>
+        <div class="bubble-content">
+          <p><strong>Namaste!</strong> I am your AI Shopkeeper Assistant powered by Google Gemma.</p>
+          <p>I have direct access to your verified MySQL database. Ask me questions by typing or speaking in English, Telugu, or Hindi:</p>
+          <ul>
+            <li><em>"How much did I sell today?"</em></li>
+            <li><em>"What is my gross and net profit this month?"</em></li>
+            <li><em>"Which product is my top seller?"</em></li>
+            <li><em>"What items are low in stock and need reordering?"</em></li>
+          </ul>
+          <div class="bubble-actions mt-2">
+            <button class="btn btn-xs btn-outline chat-speak-btn" type="button" onclick="voiceAssistant?.greet('en-IN')">🔊 Listen to Greeting</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 function initChatbot() {
   const sendBtn = document.getElementById("chatSendBtn");
   const input = document.getElementById("chatTextInput");
@@ -1836,15 +1923,10 @@ function initChatbot() {
     });
   }
 
-  // Language selector synchronization
+  // Language selector synchronization across entire app
   if (langSelect) {
     langSelect.addEventListener("change", (e) => {
-      const selected = e.target.value;
-      if (voiceAssistant) {
-        voiceAssistant.setLanguage(selected);
-      }
-      const voiceViewLangSelect = document.getElementById("voiceLangSelect");
-      if (voiceViewLangSelect) voiceViewLangSelect.value = selected;
+      setAppLanguage(e.target.value);
     });
   }
 
@@ -1854,14 +1936,7 @@ function initChatbot() {
       chatHistory = [];
       const messagesBox = document.getElementById("chatMessages");
       if (messagesBox) {
-        messagesBox.innerHTML = `
-          <div class="chat-bubble bot-bubble">
-            <div class="bubble-avatar">🤖</div>
-            <div class="bubble-content">
-              <p><strong>Namaste!</strong> Conversation cleared. Ask me anything about your shop's sales, stock, expenses, or retail advice in English, Telugu, or Hindi.</p>
-            </div>
-          </div>
-        `;
+        updateChatWelcomeMessage(state.selectedLanguage || "en-IN");
       }
       showToast("Chat conversation history cleared.", "info");
     });
@@ -1911,6 +1986,11 @@ async function sendChatMessage(query) {
   const sendBtn = document.getElementById("chatSendBtn");
   if (!messagesBox || isChatProcessing) return;
 
+  // Stop any previous speech immediately
+  if (voiceAssistant) {
+    voiceAssistant.stopSpeaking();
+  }
+
   isChatProcessing = true;
 
   // Disable input & show loading state
@@ -1936,9 +2016,8 @@ async function sendChatMessage(query) {
   `;
   const loadingBubble = appendChatBubble("bot", loadingHtml);
 
-  // Determine selected language
-  const langSelect = document.getElementById("chatLangSelect");
-  const selectedLang = langSelect ? langSelect.value : (voiceAssistant?.selectedLanguage || "en-IN");
+  // Selected language takes absolute precedence
+  const selectedLang = state.selectedLanguage || document.getElementById("chatLangSelect")?.value || "en-IN";
 
   try {
     const res = await fetch("/api/chat", {
@@ -1966,7 +2045,7 @@ async function sendChatMessage(query) {
         chatHistory = chatHistory.slice(-20);
       }
 
-      // AI talks aloud to the user if enabled
+      // AI talks aloud to the user in the selected language if enabled
       if (voiceAssistant && state.settings.auto_speak_response !== false) {
         voiceAssistant.speakText(speechStr, { language: respLang });
       }
@@ -2119,7 +2198,7 @@ function initVoice() {
 
   if (voiceLangSelect) {
     voiceLangSelect.addEventListener("change", (e) => {
-      voiceAssistant.setLanguage(e.target.value);
+      setAppLanguage(e.target.value);
     });
   }
 
@@ -2232,12 +2311,17 @@ async function processVoiceQuestion(questionText) {
   const repeatBtn = document.getElementById("voiceRepeatAnswerBtn");
   const stopBtn = document.getElementById("voiceStopSpeakingBtn");
 
+  // Stop any previous speech immediately
+  if (voiceAssistant) {
+    voiceAssistant.stopSpeaking();
+  }
+
   if (transcriptEl) transcriptEl.textContent = questionText;
   if (answerEl) answerEl.textContent = "Querying live database & generating Gemma AI explanation...";
   if (repeatBtn) repeatBtn.style.display = "none";
   if (stopBtn) stopBtn.style.display = "none";
 
-  const selectedLang = voiceAssistant?.selectedLanguage || "en-IN";
+  const selectedLang = state.selectedLanguage || voiceAssistant?.selectedLanguage || "en-IN";
 
   try {
     const historyPayload = voiceHistoryItems.slice(0, 4).reverse().flatMap(it => [
@@ -2482,6 +2566,9 @@ function renderAnalyticsCategoryChart(labels, dataPoints) {
 
 function initSettings() {
   document.getElementById("saveSettingsBtn")?.addEventListener("click", saveShopSettings);
+  document.getElementById("settingVoiceLanguage")?.addEventListener("change", (e) => {
+    setAppLanguage(e.target.value);
+  });
 }
 
 async function loadSettingsAndHealth() {
@@ -2512,12 +2599,14 @@ async function loadSettingsAndHealth() {
     document.getElementById("settingAutoSpeak").checked = !!state.settings.auto_speak_response;
     document.getElementById("settingLowStockThreshold").value = state.settings.low_stock_default_threshold || 5;
 
-    // Update voice assistant default language
-    if (voiceAssistant && state.settings.voice_language) {
-      voiceAssistant.setLanguage(state.settings.voice_language);
-      const voiceLangSelect = document.getElementById("voiceLangSelect");
-      if (voiceLangSelect) voiceLangSelect.value = state.settings.voice_language;
+    // Initialize language across the entire application
+    let savedLang = "en-IN";
+    try {
+      savedLang = localStorage.getItem("shopkeeper_language") || state.settings.voice_language || "en-IN";
+    } catch (e) {
+      savedLang = state.settings.voice_language || "en-IN";
     }
+    setAppLanguage(savedLang);
 
     // Health UI
     if (data.system_health) {

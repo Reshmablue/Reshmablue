@@ -50,22 +50,29 @@ if API_KEY:
 
 def detect_language(text, fallback_lang="en-IN"):
     """
-    Detect whether the input transcript contains Telugu, Hindi (Devanagari), or English.
-    Returns language code: 'te-IN', 'hi-IN', or 'en-IN'.
+    Detect whether the language is Telugu, Hindi, or English.
+    If the shopkeeper explicitly selected a language in the UI (fallback_lang),
+    that explicit selection is strictly honored.
     """
-    if not text:
-        return fallback_lang
+    if fallback_lang:
+        norm = str(fallback_lang).lower().strip()
+        if "te" in norm:
+            return "te-IN"
+        elif "hi" in norm:
+            return "hi-IN"
+        elif "en" in norm and not text:
+            return "en-IN"
 
-    # Check for Telugu Unicode block (0C00 - 0C7F)
-    if re.search(r"[\u0C00-\u0C7F]", text):
-        return "te-IN"
+    if text:
+        # Check for Telugu Unicode block (0C00 - 0C7F)
+        if re.search(r"[\u0C00-\u0C7F]", text):
+            return "te-IN"
 
-    # Check for Devanagari / Hindi Unicode block (0900 - 097F)
-    if re.search(r"[\u0900-\u097F]", text):
-        return "hi-IN"
+        # Check for Devanagari / Hindi Unicode block (0900 - 097F)
+        if re.search(r"[\u0900-\u097F]", text):
+            return "hi-IN"
 
-    # Normalize incoming fallback
-    norm = fallback_lang.lower().strip()
+    norm = str(fallback_lang or "").lower().strip()
     if "te" in norm:
         return "te-IN"
     elif "hi" in norm:
@@ -81,10 +88,10 @@ def clean_speech_text(text, language="en-IN"):
     """
     Transforms formatted markdown and symbols into natural, spoken text for TTS.
     - Strips markdown asterisks, hashes, backticks, bullet characters.
-    - Converts currency symbols (₹, Rs., INR) to spoken words:
-        * en-IN: 'Rupees'
+    - Converts currency symbols (₹, Rs., INR) to spoken words matching the chosen language:
         * te-IN: 'రూపాయలు'
         * hi-IN: 'रुपये'
+        * en-IN: 'Rupees'
     - Strips internal commas in digits (e.g. 2,700 -> 2700) so synthesizers don't say 'comma'.
     - Replaces newlines and bullet lines with smooth spoken pauses.
     """
@@ -93,13 +100,16 @@ def clean_speech_text(text, language="en-IN"):
 
     speech = text
 
-    # Currency word mappings
-    lang_code = detect_language(speech, language)
-    if lang_code == "te-IN":
+    # Currency word mappings strictly based on user's selected language
+    norm = str(language or "").lower()
+    if "te" in norm or detect_language(speech) == "te-IN":
+        lang_code = "te-IN"
         curr_word = "రూపాయలు"
-    elif lang_code == "hi-IN":
+    elif "hi" in norm or detect_language(speech) == "hi-IN":
+        lang_code = "hi-IN"
         curr_word = "रुपये"
     else:
+        lang_code = "en-IN"
         curr_word = "Rupees"
 
     # 1. Clean numbers with commas: e.g. 2,700 -> 2700, 10,000 -> 10000
@@ -107,12 +117,7 @@ def clean_speech_text(text, language="en-IN"):
 
     # 2. Currency transformations:
     # Pattern: ₹ 2700 or ₹2700 or Rs. 2700 or Rs 2700
-    if lang_code in ("te-IN", "hi-IN"):
-        # In Telugu and Hindi, amount often precedes currency: "2700 రూపాయలు" / "2700 रुपये"
-        speech = re.sub(r"(?:₹|Rs\.?|INR)\s*(\d+(?:\.\d+)?)", rf"\1 {curr_word}", speech, flags=re.IGNORECASE)
-    else:
-        # In English: "2700 Rupees" is very naturally spoken by web TTS
-        speech = re.sub(r"(?:₹|Rs\.?|INR)\s*(\d+(?:\.\d+)?)", rf"\1 {curr_word}", speech, flags=re.IGNORECASE)
+    speech = re.sub(r"(?:₹|Rs\.?|INR)\s*(\d+(?:\.\d+)?)", rf"\1 {curr_word}", speech, flags=re.IGNORECASE)
 
     # Any standalone currency symbol leftover
     speech = re.sub(r"[₹]", f" {curr_word} ", speech)
@@ -149,8 +154,7 @@ def clean_speech_text(text, language="en-IN"):
 def construct_voice_gemma_prompt(question, context, language="en-IN"):
     """
     Constructs a Gemma prompt specifically tuned for spoken dialogue.
-    Instructions prioritize concise, conversational answers (2-3 sentences)
-    grounded 100% in verified MySQL data.
+    Strictly forces response in the selected language.
     """
     category = context.get("category", "general")
     data = context.get("data")
@@ -159,9 +163,17 @@ def construct_voice_gemma_prompt(question, context, language="en-IN"):
 
     lang_code = detect_language(question, language)
     if lang_code == "te-IN":
-        lang_rule = "Respond in natural, respectful, spoken Telugu (తెలుగు). Use polite shopkeeper conversational tone."
+        lang_rule = (
+            "MANDATORY LANGUAGE RULE: SPEAK EXCLUSIVELY IN TELUGU (తెలుగు) USING TELUGU SCRIPT.\n"
+            "The user selected Telugu. REGARDLESS of what language the question was asked in (even if asked in English), "
+            "you MUST reply 100% in natural, respectful, spoken Telugu (తెలుగు). Do NOT speak in English."
+        )
     elif lang_code == "hi-IN":
-        lang_rule = "Respond in natural, respectful, spoken Hindi (हिन्दी). Use polite shopkeeper conversational tone."
+        lang_rule = (
+            "MANDATORY LANGUAGE RULE: SPEAK EXCLUSIVELY IN HINDI (हिन्दी) USING DEVANAGARI SCRIPT.\n"
+            "The user selected Hindi. REGARDLESS of what language the question was asked in (even if asked in English), "
+            "you MUST reply 100% in natural, respectful, spoken Hindi (हिन्दी). Do NOT speak in English."
+        )
     else:
         lang_rule = "Respond in clear, natural, spoken Indian English."
 
@@ -285,7 +297,7 @@ def process_voice_query(transcript, language="en-IN", connection=None, history=N
 
         if not display_text:
             # Fall back to verified direct database report
-            display_text = format_direct_business_fallback(context, clean_q)
+            display_text = format_direct_business_fallback(context, clean_q, language=detected_lang)
 
         # Step 4: Generate audio-optimized speech text
         speech_text = clean_speech_text(display_text, language=detected_lang)
