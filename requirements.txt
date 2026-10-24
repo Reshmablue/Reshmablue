@@ -1,0 +1,24 @@
+# Core Web Framework
+flask>=3.0.0
+
+# AI & Language Models (Google GenAI SDK)
+google-genai>=2.0.0
+
+# Database Drivers
+mysql-connector-python>=8.0.0
+pymysql>=1.0.0
+
+# Environment Variable Management
+python-dotenv>=1.0.0
+
+# HTTP Requests (Online Barcode APIs - Open Food Facts)
+requests>=2.31.0
+
+# Computer Vision & Barcode Scanning
+opencv-python>=4.8.0
+zxing-cpp>=2.2.0
+numpy>=1.24.0
+pillow>=10.0.0
+
+# Data Processing & Catalogue Import
+pandas>=2.0.0

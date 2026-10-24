@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Shopkeeper Assistant - Retail POS & Business Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <span class="logo-icon">🏪</span>
+          <div class="brand-text">
+            <h2>AI Shopkeeper</h2>
+            <span class="brand-sub">Smart Retail Assistant</span>
+          </div>
+        </div>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar">&times;</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <button class="nav-item active" data-view="dashboard">
+              <span class="nav-icon">📊</span>
+              <span class="nav-label">Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="billing">
+              <span class="nav-icon">🛒</span>
+              <span class="nav-label">Billing & POS</span>
+              <span class="nav-badge" id="cartBadge" style="display:none;">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="lookup">
+              <span class="nav-icon">🔍</span>
+              <span class="nav-label">Smart Lookup</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="inventory">
+              <span class="nav-icon">📦</span>
+              <span class="nav-label">Inventory</span>
+              <span class="nav-badge badge-warning" id="lowStockBadge" style="display:none;">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="sales">
+              <span class="nav-icon">📑</span>
+              <span class="nav-label">Sales & Purchases</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="reports">
+              <span class="nav-icon">📈</span>
+              <span class="nav-label">Profit & Loss</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="chatbot">
+              <span class="nav-icon">🤖</span>
+              <span class="nav-label">Gemma AI Chat</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="voice">
+              <span class="nav-icon">🎙️</span>
+              <span class="nav-label">Voice Assistant</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="analytics">
+              <span class="nav-icon">📉</span>
+              <span class="nav-label">Analytics</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-view="settings">
+              <span class="nav-icon">⚙️</span>
+              <span class="nav-label">Settings</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status-indicator">
+          <span class="status-dot dot-online"></span>
+          <span class="status-label">MySQL & Gemma Ready</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- TOP NAVIGATION BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="Toggle Sidebar">
+            <span>☰</span>
+          </button>
+          <div class="shop-info-display">
+            <h1 class="topbar-shop-name" id="topbarShopName">{{ settings.shop_name }}</h1>
+            <span class="topbar-shop-owner">Prop: <strong id="topbarOwnerName">{{ settings.owner_name }}</strong></span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="live-clock" id="liveClock">--:--:--</div>
+
+          <!-- Quick Voice Trigger -->
+          <button class="btn btn-voice-header" id="headerVoiceBtn" title="Speak to AI Shopkeeper">
+            <span class="voice-wave-anim">🎙️</span>
+            <span class="header-voice-text">Ask Gemma</span>
+          </button>
+
+          <!-- POS Quick Switch -->
+          <button class="btn btn-primary btn-sm" id="quickNewBillBtn">
+            <span>+ New Bill</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT VIEWS CONTAINER -->
+      <div class="content-body">
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section class="app-view active" id="view-dashboard">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Store Dashboard</h2>
+              <p class="view-subtitle">Today's live sales, inventory health, and store performance</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="refreshDashboardBtn">🔄 Refresh Data</button>
+          </div>
+
+          <!-- Metric Cards Grid -->
+          <div class="metrics-grid">
+            <div class="metric-card card-sales">
+              <div class="metric-icon">💰</div>
+              <div class="metric-details">
+                <span class="metric-title">Today's Sales</span>
+                <h3 class="metric-value" id="dashTodaySales">₹0.00</h3>
+                <span class="metric-sub" id="dashTodayBills">0 bills completed</span>
+              </div>
+            </div>
+
+            <div class="metric-card card-profit">
+              <div class="metric-icon">📈</div>
+              <div class="metric-details">
+                <span class="metric-title">Today's Net Profit</span>
+                <h3 class="metric-value" id="dashTodayProfit">₹0.00</h3>
+                <span class="metric-sub" id="dashProfitStatus">Gross profit minus expenses</span>
+              </div>
+            </div>
+
+            <div class="metric-card card-inventory">
+              <div class="metric-icon">📦</div>
+              <div class="metric-details">
+                <span class="metric-title">Active Products</span>
+                <h3 class="metric-value" id="dashActiveProducts">0</h3>
+                <span class="metric-sub">Items ready for billing</span>
+              </div>
+            </div>
+
+            <div class="metric-card card-alerts">
+              <div class="metric-icon">⚠️</div>
+              <div class="metric-details">
+                <span class="metric-title">Low Stock Alerts</span>
+                <h3 class="metric-value" id="dashLowStockCount">0</h3>
+                <span class="metric-sub text-danger" id="dashLowStockSub">Items below reorder level</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts & Recent Activity Layout -->
+          <div class="grid-2-col mt-4">
+            <!-- 7-Day Trend Chart -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">7-Day Sales Trend (₹)</h3>
+                <span class="badge badge-info">Verified Database Records</span>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" style="position: relative; height:240px;">
+                  <canvas id="dashboardSalesChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monthly Summary Card -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">This Month's Performance</h3>
+                <span class="badge badge-success">Month to Date</span>
+              </div>
+              <div class="card-body">
+                <div class="summary-list">
+                  <div class="summary-row">
+                    <span>Month Revenue (Net):</span>
+                    <strong id="dashMonthSales">₹0.00</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>Discounts Given:</span>
+                    <span id="dashMonthDiscounts">₹0.00</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>Cost of Goods Sold:</span>
+                    <span id="dashMonthCOGS">₹0.00</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>Gross Profit:</span>
+                    <strong id="dashMonthGross">₹0.00</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>Operating Expenses:</span>
+                    <span id="dashMonthExpenses">₹0.00</span>
+                  </div>
+                  <div class="summary-divider"></div>
+                  <div class="summary-row highlight">
+                    <span>Net Profit / Loss:</span>
+                    <strong id="dashMonthNetProfit" class="text-success">₹0.00</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Low Stock & Recent Sales Grid -->
+          <div class="grid-2-col mt-4">
+            <!-- Low Stock Table -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Low Stock Items Requiring Restock</h3>
+                <button class="btn btn-outline btn-xs" onclick="switchView('inventory')">View All</button>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Level</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashLowStockTableBody">
+                      <tr><td colspan="4" class="text-center text-muted py-3">Loading low stock items...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Sales Stream -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Recent Completed Sales</h3>
+                <button class="btn btn-outline btn-xs" onclick="switchView('sales')">View History</button>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Bill #</th>
+                        <th>Date & Time</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Payment</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashRecentSalesTableBody">
+                      <tr><td colspan="5" class="text-center text-muted py-3">Loading recent transactions...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 2. BILLING & POINT OF SALE (POS) VIEW -->
+        <section class="app-view" id="view-billing">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Billing & Point of Sale</h2>
+              <p class="view-subtitle">Fast checkout with USB barcode scanning and manual search</p>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-secondary btn-sm" id="posClearCartBtn">🗑️ Clear Bill</button>
+              <button class="btn btn-outline btn-sm" id="posQuickAddCatalogueBtn">➕ Scan New Item</button>
+            </div>
+          </div>
+
+          <div class="pos-layout">
+            <!-- LEFT PANEL: SCANNER & ITEM SELECTOR -->
+            <div class="pos-left">
+              <!-- Barcode Scanner Input Box -->
+              <div class="card mb-3 scanner-card">
+                <div class="scanner-input-group">
+                  <span class="scanner-icon">📟</span>
+                  <input type="text" id="posBarcodeInput" class="form-control scanner-input"
+                         placeholder="Scan barcode with USB scanner or type barcode and press Enter..." autofocus autocomplete="off">
+                  <button class="btn btn-primary" id="posBarcodeSubmitBtn" title="Add typed barcode">Add</button>
+                  <button class="btn btn-secondary" id="posOpenCamScannerBtn" type="button" title="Open Laptop Webcam to Scan Barcode">📷 Camera Scan</button>
+                </div>
+                <div class="scanner-hint">
+                  <span>💡 Tip: Click <strong>📷 Camera Scan</strong> to scan with your laptop webcam, or use a USB scanner / keyboard.</span>
+                </div>
+              </div>
+
+              <!-- Product Search Box -->
+              <div class="card mb-3">
+                <div class="card-header py-2">
+                  <h4 class="card-title-sm">Manual Product Search</h4>
+                </div>
+                <div class="card-body">
+                  <div class="search-input-wrapper">
+                    <input type="text" id="posProductSearchInput" class="form-control"
+                           placeholder="Type product name (e.g. Rice, Sugar, Atta, Soap)..." autocomplete="off">
+                    <div id="posSearchResultsDropdown" class="search-dropdown" style="display:none;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Pick Favorites Grid -->
+              <div class="card">
+                <div class="card-header py-2">
+                  <h4 class="card-title-sm">Quick Add Store Products</h4>
+                  <span class="text-muted text-xs">Click to add 1 unit to bill</span>
+                </div>
+                <div class="card-body">
+                  <div class="quick-products-grid" id="posQuickProductsGrid">
+                    <div class="text-muted text-center py-4">Loading store inventory...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT PANEL: CURRENT BILL / CART -->
+            <div class="pos-right">
+              <div class="card cart-card">
+                <div class="cart-header">
+                  <h3>Current Bill</h3>
+                  <span class="cart-count-badge" id="cartItemCountBadge">0 items</span>
+                </div>
+
+                <div class="cart-table-wrapper">
+                  <table class="table cart-table">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Rate (₹)</th>
+                        <th>Qty</th>
+                        <th>Total (₹)</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="cartTableBody">
+                      <tr id="cartEmptyRow">
+                        <td colspan="5" class="cart-empty-state">
+                          <span class="cart-empty-icon">🛒</span>
+                          <p>Bill is currently empty</p>
+                          <small class="text-muted">Scan a barcode or search products to begin billing</small>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Bill Totals & Checkout -->
+                <div class="cart-footer">
+                  <div class="bill-summary-row">
+                    <span>Subtotal:</span>
+                    <strong id="posSubtotalText">₹0.00</strong>
+                  </div>
+
+                  <div class="bill-summary-row discount-row">
+                    <div class="discount-input-wrapper">
+                      <label for="posDiscountInput">Discount (₹):</label>
+                      <input type="number" id="posDiscountInput" class="form-control form-control-sm"
+                             min="0" step="1" value="0">
+                    </div>
+                    <span id="posDiscountText" class="text-danger">- ₹0.00</span>
+                  </div>
+
+                  <div class="bill-total-row">
+                    <span>Grand Total:</span>
+                    <strong class="grand-total-amount" id="posGrandTotalText">₹0.00</strong>
+                  </div>
+
+                  <!-- Payment Method Selection -->
+                  <div class="payment-methods-group">
+                    <label class="form-label-sm">Payment Method:</label>
+                    <div class="payment-radios">
+                      <label class="payment-radio-btn active">
+                        <input type="radio" name="posPaymentMethod" value="Cash" checked>
+                        <span>💵 Cash</span>
+                      </label>
+                      <label class="payment-radio-btn">
+                        <input type="radio" name="posPaymentMethod" value="UPI" >
+                        <span>📱 UPI</span>
+                      </label>
+                      <label class="payment-radio-btn">
+                        <input type="radio" name="posPaymentMethod" value="Card">
+                        <span>💳 Card</span>
+                      </label>
+                      <label class="payment-radio-btn">
+                        <input type="radio" name="posPaymentMethod" value="Udhar">
+                        <span>📖 Udhar</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Checkout Action Button -->
+                  <button class="btn btn-success btn-block btn-lg" id="posCheckoutBtn" disabled>
+                    <span>Complete Sale (F9)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 3. SMART PRODUCT LOOKUP VIEW -->
+        <section class="app-view" id="view-lookup">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Smart Product Lookup (3-Tier)</h2>
+              <p class="view-subtitle">Instant recognition from shop inventory, local master catalogue, or official open APIs</p>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <div class="lookup-form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Enter or Scan Barcode</label>
+                  <div class="input-with-button">
+                    <input type="text" id="lookupBarcodeInput" class="form-control form-control-lg"
+                           placeholder="Enter 8, 12, or 13-digit barcode (e.g. 8901030383786)..." autofocus>
+                    <button class="btn btn-primary btn-lg" id="lookupSearchBtn">🔍 Search Product</button>
+                    <button class="btn btn-secondary btn-lg" id="lookupOpenCamScannerBtn" type="button" title="Open Laptop Webcam to Scan Barcode">📷 Camera Scan</button>
+                  </div>
+                </div>
+              </div>
+              <div class="lookup-tiers-explanation">
+                <span class="tier-badge tier-1">Tier 1: Shop Inventory</span>
+                <span class="tier-arrow">&rarr;</span>
+                <span class="tier-badge tier-2">Tier 2: Master Catalogue</span>
+                <span class="tier-arrow">&rarr;</span>
+                <span class="tier-badge tier-3">Tier 3: Open Food / Beauty / Products Facts</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lookup Results Card -->
+          <div id="lookupResultContainer" style="display:none;"></div>
+        </section>
+
+
+        <!-- 4. INVENTORY MANAGEMENT VIEW -->
+        <section class="app-view" id="view-inventory">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Inventory Management</h2>
+              <p class="view-subtitle">Manage store products, prices, stock levels, and reorder warnings</p>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-secondary btn-sm" id="viewCatalogueModalBtn">📖 Browse Master Catalogue</button>
+              <button class="btn btn-primary btn-sm" id="addNewProductBtn">+ Add Product</button>
+            </div>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="card mb-3">
+            <div class="card-body py-2">
+              <div class="filter-bar">
+                <div class="filter-item flex-2">
+                  <input type="text" id="invSearchInput" class="form-control form-control-sm"
+                         placeholder="Search by product name, barcode, brand...">
+                </div>
+                <div class="filter-item">
+                  <select id="invCategoryFilter" class="form-control form-control-sm">
+                    <option value="all">All Categories</option>
+                  </select>
+                </div>
+                <div class="filter-item">
+                  <select id="invStockFilter" class="form-control form-control-sm">
+                    <option value="all">All Stock Statuses</option>
+                    <option value="low_stock">⚠️ Low Stock Only</option>
+                    <option value="out_of_stock">❌ Out of Stock</option>
+                    <option value="active">Active Products</option>
+                    <option value="inactive">Inactive Products</option>
+                  </select>
+                </div>
+                <button class="btn btn-outline btn-sm" id="invResetFiltersBtn">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Products Table -->
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table" id="inventoryTable">
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>Category</th>
+                      <th>Barcode</th>
+                      <th>Selling Price</th>
+                      <th>Cost Price</th>
+                      <th>Current Stock</th>
+                      <th>Reorder Level</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventoryTableBody">
+                    <tr><td colspan="9" class="text-center text-muted py-4">Loading store inventory...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 5. SALES & PURCHASES VIEW -->
+        <section class="app-view" id="view-sales">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Sales & Purchases Transactions</h2>
+              <p class="view-subtitle">Review historical sales receipts, recorded purchases, and store expenses</p>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary btn-sm" id="openAddExpenseBtn">+ Record Expense</button>
+              <button class="btn btn-secondary btn-sm" id="openAddPurchaseBtn">+ Record Purchase Invoice</button>
+            </div>
+          </div>
+
+          <!-- Tabs for Sales vs Purchases vs Expenses -->
+          <div class="tabs-nav mb-3">
+            <button class="tab-btn active" data-subtab="sales-subtab">Bills & Sales History</button>
+            <button class="tab-btn" data-subtab="purchases-subtab">Supplier Purchases</button>
+            <button class="tab-btn" data-subtab="expenses-subtab">Operating Expenses</button>
+          </div>
+
+          <!-- SUBTAB 1: SALES HISTORY -->
+          <div class="subtab-pane active" id="sales-subtab">
+            <div class="card mb-3">
+              <div class="card-body py-2">
+                <div class="filter-bar">
+                  <div class="filter-item">
+                    <label class="form-label-xs">From:</label>
+                    <input type="date" id="salesFilterStart" class="form-control form-control-sm">
+                  </div>
+                  <div class="filter-item">
+                    <label class="form-label-xs">To:</label>
+                    <input type="date" id="salesFilterEnd" class="form-control form-control-sm">
+                  </div>
+                  <div class="filter-item">
+                    <label class="form-label-xs">Payment:</label>
+                    <select id="salesFilterPayment" class="form-control form-control-sm">
+                      <option value="all">All Modes</option>
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                      <option value="Udhar">Udhar</option>
+                    </select>
+                  </div>
+                  <button class="btn btn-primary btn-sm" id="salesApplyFilterBtn">Apply Filter</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Bill ID</th>
+                        <th>Date & Time</th>
+                        <th>Items Count</th>
+                        <th>Units Sold</th>
+                        <th>Discount</th>
+                        <th>Net Total</th>
+                        <th>Payment Mode</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="salesHistoryTableBody">
+                      <tr><td colspan="8" class="text-center text-muted py-4">Loading sales history...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 2: SUPPLIER PURCHASES -->
+          <div class="subtab-pane" id="purchases-subtab">
+            <div class="card">
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Purchase ID</th>
+                        <th>Date</th>
+                        <th>Supplier Name</th>
+                        <th>Items Count</th>
+                        <th>Total Amount</th>
+                        <th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody id="purchasesTableBody">
+                      <tr><td colspan="6" class="text-center text-muted py-4">No purchases recorded yet.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBTAB 3: OPERATING EXPENSES -->
+          <div class="subtab-pane" id="expenses-subtab">
+            <div class="card">
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Expense ID</th>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                      <tr><td colspan="5" class="text-center text-muted py-4">No expenses recorded yet.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 6. PROFIT & LOSS REPORTS VIEW -->
+        <section class="app-view" id="view-reports">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Profit & Loss Statements</h2>
+              <p class="view-subtitle">Audited financial calculations directly derived from MySQL transaction records</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="printReportBtn">🖨️ Print Statement</button>
+          </div>
+
+          <!-- Period Selector Card -->
+          <div class="card mb-4">
+            <div class="card-body">
+              <div class="report-controls-row">
+                <div class="form-group">
+                  <label class="form-label-sm">Report Period</label>
+                  <select id="reportPeriodType" class="form-control form-control-sm">
+                    <option value="daily" selected>Daily Report</option>
+                    <option value="monthly">Monthly Report</option>
+                    <option value="yearly">Yearly Report</option>
+                    <option value="custom">Custom Date Range</option>
+                  </select>
+                </div>
+
+                <!-- Daily Picker -->
+                <div class="form-group period-picker" id="pickerDaily">
+                  <label class="form-label-sm">Select Date</label>
+                  <input type="date" id="reportDailyDate" class="form-control form-control-sm">
+                </div>
+
+                <!-- Monthly Picker -->
+                <div class="form-group period-picker" id="pickerMonthly" style="display:none;">
+                  <label class="form-label-sm">Select Month</label>
+                  <input type="month" id="reportMonthlyMonth" class="form-control form-control-sm">
+                </div>
+
+                <!-- Yearly Picker -->
+                <div class="form-group period-picker" id="pickerYearly" style="display:none;">
+                  <label class="form-label-sm">Select Year</label>
+                  <input type="number" id="reportYearlyYear" class="form-control form-control-sm" min="2020" max="2035">
+                </div>
+
+                <!-- Custom Range Picker -->
+                <div class="form-group period-picker" id="pickerCustom" style="display:none;">
+                  <label class="form-label-sm">Start Date</label>
+                  <input type="date" id="reportCustomStart" class="form-control form-control-sm">
+                </div>
+                <div class="form-group period-picker" id="pickerCustomEnd" style="display:none;">
+                  <label class="form-label-sm">End Date</label>
+                  <input type="date" id="reportCustomEnd" class="form-control form-control-sm">
+                </div>
+
+                <div class="form-group align-self-end">
+                  <button class="btn btn-primary btn-sm" id="generateReportBtn">Generate Statement</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Printable Statement Paper -->
+          <div class="report-paper card" id="printableReportCard">
+            <div class="report-paper-header">
+              <h2 id="repShopTitle">{{ settings.shop_name }}</h2>
+              <p id="repStatementTitle">DAILY FINANCIAL REPORT</p>
+              <span class="report-date-badge" id="repDateRangeBadge">--</span>
+            </div>
+
+            <div class="report-ledger">
+              <div class="ledger-row">
+                <span class="ledger-label">Number of Sales Transactions (Bills):</span>
+                <span class="ledger-value" id="repNumBills">0</span>
+              </div>
+              <div class="ledger-row">
+                <span class="ledger-label">Net Sales Revenue (After Discounts):</span>
+                <span class="ledger-value font-bold" id="repNetSales">₹0.00</span>
+              </div>
+              <div class="ledger-row sub-row">
+                <span class="ledger-label">Total Discounts Provided:</span>
+                <span class="ledger-value text-danger" id="repDiscounts">₹0.00</span>
+              </div>
+              <div class="ledger-row">
+                <span class="ledger-label">Cost of Goods Sold (Purchase Cost of Items Sold):</span>
+                <span class="ledger-value" id="repCOGS">₹0.00</span>
+              </div>
+              <div class="ledger-divider"></div>
+              <div class="ledger-row highlight-row">
+                <span class="ledger-label">GROSS PROFIT / MARGIN:</span>
+                <span class="ledger-value font-bold" id="repGrossProfit">₹0.00</span>
+              </div>
+              <div class="ledger-row">
+                <span class="ledger-label">Operating Expenses (Shop Rent, Electricity, Salaries, etc.):</span>
+                <span class="ledger-value text-danger" id="repExpenses">₹0.00</span>
+              </div>
+              <div class="ledger-double-divider"></div>
+              <div class="ledger-row grand-row">
+                <span class="ledger-label" id="repNetProfitLabel">NET PROFIT:</span>
+                <span class="ledger-value font-bold text-success" id="repNetProfit">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Category Sales Breakdown in Report -->
+            <div class="mt-4" id="repCategorySection" style="display:none;">
+              <h4 class="card-title-sm mb-2">Category Sales Breakdown</h4>
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Units Sold</th>
+                    <th>Revenue (₹)</th>
+                  </tr>
+                </thead>
+                <tbody id="repCategoryTableBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Low Stock Warnings in Report -->
+            <div class="mt-4" id="repLowStockSection" style="display:none;">
+              <h4 class="card-title-sm mb-2 text-warning">⚠️ Current Low Stock Items</h4>
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>In Stock</th>
+                    <th>Reorder Level</th>
+                  </tr>
+                </thead>
+                <tbody id="repLowStockTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 7. GEMMA AI CHATBOT VIEW -->
+        <section class="app-view" id="view-chatbot">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Gemma AI Retail Assistant</h2>
+              <p class="view-subtitle">Spoken voice and text AI assistant for sales, profit, inventory, and retail guidance</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="chat-language-selector" style="display:flex; align-items:center; gap:6px;">
+                <label for="chatLangSelect" style="margin:0; font-size:12px; font-weight:600; color:var(--text-muted);">Lang:</label>
+                <select id="chatLangSelect" class="form-control form-control-sm" style="width: auto; padding: 2px 8px; font-size: 12px; height: 30px;">
+                  <option value="en-IN" selected>English</option>
+                  <option value="te-IN">Telugu (తెలుగు)</option>
+                  <option value="hi-IN">Hindi (हिन्दी)</option>
+                </select>
+              </div>
+              <button class="btn btn-xs btn-outline" id="chatToggleSpeechBtn" type="button" title="Toggle automatic spoken voice replies">🔊 Voice: ON</button>
+              <button class="btn btn-xs btn-danger" id="chatStopSpeakingBtn" type="button" style="display:none;" title="Stop voice readout">⏹️ Stop Speaking</button>
+              <button class="btn btn-xs btn-outline" id="chatClearHistoryBtn" type="button" title="Clear conversation history">🗑️ Clear Chat</button>
+              <span class="badge badge-success">Gemma 4 Active</span>
+            </div>
+          </div>
+
+          <div class="chat-container card">
+            <!-- Chat Messages Log -->
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-bubble bot-bubble">
+                <div class="bubble-avatar">🤖</div>
+                <div class="bubble-content">
+                  <p><strong>Namaste!</strong> I am your AI Shopkeeper Assistant powered by Google Gemma.</p>
+                  <p>I have direct access to your verified MySQL database. Ask me questions by typing or speaking in English, Telugu (తెలుగు), or Hindi (हिन्दी):</p>
+                  <ul>
+                    <li><em>"How much did I sell today?"</em></li>
+                    <li><em>"What is my gross and net profit this month?"</em></li>
+                    <li><em>"Which product is my top seller?"</em></li>
+                    <li><em>"What items are low in stock and need reordering?"</em></li>
+                    <li><em>"ఈ రోజు అమ్మకాలు ఎంత?" (Telugu queries supported)</em></li>
+                    <li><em>"आज की कुल बिक्री कितनी हुई?" (Hindi queries supported)</em></li>
+                  </ul>
+                  <div class="bubble-actions mt-2">
+                    <button class="btn btn-xs btn-outline chat-speak-btn" type="button" onclick="voiceAssistant?.greet()">🔊 Listen to Greeting</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Suggestions Bar -->
+            <div class="chat-suggestions-bar">
+              <button class="chat-chip" onclick="sendQuickChatMessage('How much did I sell today?')">Today's Sales</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('What is my profit this month?')">This Month's Profit</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('What products need restocking?')">Low Stock Items</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('Which product is the top seller?')">Best Sellers</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('ఈ రోజు అమ్మకాలు ఎంత?')">ఈ రోజు అమ్మకాలు (Telugu)</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('आज की बिक्री कितनी हुई?')">आज की बिक्री (Hindi)</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('నిన్నటి లాభం ఎంత?')">నిన్నటి లాభం (Telugu)</button>
+              <button class="chat-chip" onclick="sendQuickChatMessage('कुल खर्च कितना हुआ?')">कुल खर्च (Hindi)</button>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <div class="chat-input-row">
+              <button class="btn btn-voice-circle" id="chatVoiceInputBtn" title="Speak question">
+                <span>🎙️</span>
+              </button>
+              <input type="text" id="chatTextInput" class="form-control"
+                     placeholder="Ask about your sales, stock, expenses, or retail advice..." autocomplete="off">
+              <button class="btn btn-primary" id="chatSendBtn">
+                <span>Send</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 8. VOICE-TO-VOICE ASSISTANT VIEW -->
+        <section class="app-view" id="view-voice">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Voice-to-Voice Shopkeeper Assistant</h2>
+              <p class="view-subtitle">Hands-free voice interaction for busy shopkeepers</p>
+            </div>
+            <div class="voice-header-actions" style="display:flex; align-items:center; gap:10px;">
+              <div class="voice-language-selector">
+                <label for="voiceLangSelect">Language:</label>
+                <select id="voiceLangSelect" class="form-control form-control-sm">
+                  <option value="en-IN" selected>English (India)</option>
+                  <option value="te-IN">Telugu (తెలుగు)</option>
+                  <option value="hi-IN">Hindi (हिन्दी)</option>
+                </select>
+              </div>
+              <button class="btn btn-sm btn-outline" id="voiceGreetMeBtn" type="button" title="Have the AI Shopkeeper greet and talk to you">👋 Speak Greeting</button>
+            </div>
+          </div>
+
+          <div class="voice-hero-card card">
+            <div class="voice-mic-container">
+              <button class="voice-big-mic-btn" id="voiceBigMicBtn" aria-label="Start Voice Listening">
+                <span class="mic-icon">🎙️</span>
+                <div class="mic-pulse-ring"></div>
+              </button>
+              <div class="voice-status-text" id="voiceStatusText">Tap microphone to start speaking</div>
+            </div>
+
+            <!-- Live Speech-to-Text Transcription Box -->
+            <div class="voice-transcript-box card mt-4">
+              <div class="transcript-header">
+                <span class="transcript-title">Your Question (Speech-to-Text):</span>
+                <span class="transcript-badge" id="voiceLiveIndicator">Idle</span>
+              </div>
+              <p class="transcript-text" id="voiceTranscriptText">Press the microphone button and ask a question...</p>
+            </div>
+
+            <!-- AI Spoken Answer Box -->
+            <div class="voice-answer-box card mt-3">
+              <div class="transcript-header">
+                <span class="transcript-title">Gemma AI Response (Spoken via Text-to-Speech):</span>
+                <div class="btn-group">
+                  <button class="btn btn-xs btn-outline" id="voiceRepeatAnswerBtn" style="display:none;" title="Replay spoken answer">🔊 Replay Audio</button>
+                  <button class="btn btn-xs btn-danger ml-2" id="voiceStopSpeakingBtn" style="display:none;" title="Stop voice readout">⏹️ Stop Speaking</button>
+                </div>
+              </div>
+              <p class="answer-text" id="voiceAnswerText">Assistant response will appear and be spoken aloud here.</p>
+            </div>
+
+            <!-- Fallback Text Query for Voice Section -->
+            <div class="voice-fallback-row mt-4">
+              <input type="text" id="voiceFallbackInput" class="form-control"
+                     placeholder="Or type your question here if microphone is unavailable...">
+              <button class="btn btn-primary" id="voiceFallbackSendBtn">Ask</button>
+            </div>
+
+            <!-- Quick Suggestion Chips -->
+            <div class="voice-suggestions mt-3">
+              <span class="text-muted text-sm mr-2 font-weight-bold">Try asking:</span>
+              <button type="button" class="voice-chip" data-query="How much sales today?">Today's sales</button>
+              <button type="button" class="voice-chip" data-query="What is our profit today?">Today's profit</button>
+              <button type="button" class="voice-chip" data-query="What sold the most?">Best sellers</button>
+              <button type="button" class="voice-chip" data-query="Any low stock items?">Low stock alerts</button>
+              <button type="button" class="voice-chip" data-query="నిన్నటి అమ్మకాలు ఎంత?">నిన్నటి అమ్మకాలు (Telugu)</button>
+              <button type="button" class="voice-chip" data-query="आज की बिक्री क्या है?">आज की बिक्री (Hindi)</button>
+            </div>
+
+            <!-- System Speech Capabilities Banner -->
+            <div class="voice-info-banner mt-4">
+              <span class="info-icon">⚡</span>
+              <span><strong>Hardware-Optimized Voice:</strong> Uses browser Web Speech API for instant zero-RAM speech recognition and synthesis on Windows 11 (Google Chrome or Microsoft Edge recommended). Responses are grounded strictly in live MySQL figures with zero invented arithmetic.</span>
+            </div>
+          </div>
+
+          <!-- Session Conversation History -->
+          <div class="card mt-4" id="voiceHistoryCard">
+            <div class="card-header">
+              <h3 class="card-title">🎙️ Voice Session Conversation History</h3>
+              <button class="btn btn-xs btn-outline" id="clearVoiceHistoryBtn">Clear Session History</button>
+            </div>
+            <div class="card-body">
+              <div id="voiceSessionHistoryList" class="voice-history-list">
+                <p class="text-muted text-center py-3" id="voiceEmptyHistoryMsg">No voice queries yet in this session. Questions asked will appear here with replayable audio.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 9. SALES ANALYTICS VIEW -->
+        <section class="app-view" id="view-analytics">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Sales Analytics & Insights</h2>
+              <p class="view-subtitle">Data-driven retail insights from verified database records</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="refreshAnalyticsBtn">🔄 Refresh Analytics</button>
+          </div>
+
+          <!-- Top Analytics Cards -->
+          <div class="grid-2-col mb-4">
+            <!-- Best-Selling Products -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Top Best-Selling Products</h3>
+                <span class="badge badge-success">Measured Data</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Quantity Sold</th>
+                        <th>Revenue (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="analyticsBestSellersBody">
+                      <tr><td colspan="4" class="text-center text-muted py-4">Loading top products...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slow-Moving Products -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Slow-Moving & Dead Stock Items</h3>
+                <span class="badge badge-warning">Action Recommended</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Stock Available</th>
+                        <th>Selling Price</th>
+                        <th>Total Units Sold</th>
+                      </tr>
+                    </thead>
+                    <tbody id="analyticsSlowMovingBody">
+                      <tr><td colspan="4" class="text-center text-muted py-4">Loading slow moving products...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts: 30-Day Trend & Category Breakdown -->
+          <div class="grid-2-col">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">30-Day Sales Pattern (₹)</h3>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 260px;">
+                  <canvas id="analyticsTrendChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Category Revenue Distribution</h3>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 260px;">
+                  <canvas id="analyticsCategoryChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Retail Advice Suggestions vs Measured Facts -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">Practical Retail Suggestions for Local Kirana</h3>
+              <span class="badge badge-info">AI Practical Suggestions</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestions-grid">
+                <div class="suggestion-item">
+                  <span class="sugg-icon">💡</span>
+                  <div>
+                    <strong>Checkout Counter Impulse Zone:</strong>
+                    <p>Place high-margin small confectioneries, chocolates, and mints directly adjacent to the billing counter to boost average bill value.</p>
+                  </div>
+                </div>
+                <div class="suggestion-item">
+                  <span class="sugg-icon">📦</span>
+                  <div>
+                    <strong>First-In First-Out (FIFO) Storage:</strong>
+                    <p>Rotate packaged groceries and personal care products so older stock is sold before newly arrived consignments to eliminate expiry losses.</p>
+                  </div>
+                </div>
+                <div class="suggestion-item">
+                  <span class="sugg-icon">⚡</span>
+                  <div>
+                    <strong>Reorder Level Discipline:</strong>
+                    <p>Restock items as soon as alerts appear to prevent lost sales on high-demand staples like Rice, Sugar, and Edible Oils.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 10. SETTINGS VIEW -->
+        <section class="app-view" id="view-settings">
+          <div class="view-header">
+            <div>
+              <h2 class="view-title">Settings & System Health</h2>
+              <p class="view-subtitle">Configure store details, audio preferences, and monitor connection security</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="saveSettingsBtn">Save Settings</button>
+          </div>
+
+          <div class="grid-2-col">
+            <!-- Shop Profile Settings -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Shop Details & Receipt Header</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingShopName">Shop Name</label>
+                  <input type="text" id="settingShopName" class="form-control" value="{{ settings.shop_name }}">
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingOwnerName">Owner / Proprietor Name</label>
+                  <input type="text" id="settingOwnerName" class="form-control" value="{{ settings.owner_name }}">
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingPhone">Contact Phone Number</label>
+                  <input type="text" id="settingPhone" class="form-control" value="{{ settings.phone }}">
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingAddress">Shop Address</label>
+                  <textarea id="settingAddress" class="form-control" rows="2">{{ settings.address }}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingGstin">GSTIN / Registration Number (Optional)</label>
+                  <input type="text" id="settingGstin" class="form-control" value="{{ settings.gstin }}">
+                </div>
+                <div class="form-group mb-3">
+                  <label class="form-label" for="settingReceiptFooter">Receipt Footer Message</label>
+                  <input type="text" id="settingReceiptFooter" class="form-control" value="{{ settings.receipt_footer }}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Voice & Display Preferences + Safe Health -->
+            <div>
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">Voice & UI Preferences</h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group mb-3">
+                    <label class="form-label" for="settingVoiceLanguage">Default Voice Language</label>
+                    <select id="settingVoiceLanguage" class="form-control">
+                      <option value="en-IN">English (India)</option>
+                      <option value="te-IN">Telugu (తెలుగు)</option>
+                      <option value="hi-IN">Hindi (हिन्दी)</option>
+                    </select>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="settingAutoSpeak" checked>
+                      <span>Automatically speak AI response aloud upon question completion</span>
+                    </label>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label class="form-label" for="settingLowStockThreshold">Default Low Stock Reorder Threshold</label>
+                    <input type="number" id="settingLowStockThreshold" class="form-control" min="1" value="5">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Safe System Health Card (Zero Secrets Displayed) -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">System Status & Environment Health</h3>
+                </div>
+                <div class="card-body">
+                  <div class="summary-list">
+                    <div class="summary-row">
+                      <span>Database Connection:</span>
+                      <strong class="text-success" id="healthDbStatus">Connected (MySQL 3306)</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Database Name:</span>
+                      <strong id="healthDbName">shopkeeper_ai</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Database Tables:</span>
+                      <span id="healthTableCount">7 Tables</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Gemma API Configuration:</span>
+                      <strong class="text-success" id="healthGemmaStatus">Configured via .env</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>Active AI Model:</span>
+                      <span>gemma-4-31b-it (fallback: 26b-a4b)</span>
+                    </div>
+                    <div class="summary-row">
+                      <span>Security Guardrail:</span>
+                      <span class="badge badge-success">Zero Credentials Exposed</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. RECEIPT MODAL -->
+  <div class="modal-overlay" id="receiptModal" style="display:none;">
+    <div class="modal-card receipt-modal-card">
+      <div class="modal-header">
+        <h3>Sale Completed Successfully!</h3>
+        <button class="modal-close-btn" onclick="closeModal('receiptModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="printable-receipt" id="printableReceipt">
+          <div class="receipt-header text-center">
+            <h4 id="rcptShopName">{{ settings.shop_name }}</h4>
+            <p id="rcptAddress">{{ settings.address }}</p>
+            <p id="rcptPhone">Phone: {{ settings.phone }}</p>
+            <div class="receipt-divider">================================</div>
+            <div class="receipt-meta">
+              <span>Bill No: <strong id="rcptBillId">#0</strong></span>
+              <span id="rcptDateTime">--</span>
+            </div>
+            <div class="receipt-divider">--------------------------------</div>
+          </div>
+
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th class="text-left">Item</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th class="text-right">Amt</th>
+              </tr>
+            </thead>
+            <tbody id="rcptItemsBody"></tbody>
+          </table>
+
+          <div class="receipt-divider">--------------------------------</div>
+          <div class="receipt-totals">
+            <div class="rcpt-row"><span>Subtotal:</span><span id="rcptSubtotal">₹0.00</span></div>
+            <div class="rcpt-row"><span>Discount:</span><span id="rcptDiscount">₹0.00</span></div>
+            <div class="receipt-divider">================================</div>
+            <div class="rcpt-row grand font-bold"><span>TOTAL:</span><span id="rcptTotal">₹0.00</span></div>
+            <div class="rcpt-row"><span>Payment Mode:</span><span id="rcptPaymentMode">Cash</span></div>
+          </div>
+          <div class="receipt-footer text-center mt-3">
+            <p id="rcptFooterMsg">{{ settings.receipt_footer }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="printReceipt()">🖨️ Print Receipt</button>
+        <button class="btn btn-secondary" onclick="closeModal('receiptModal')">Done</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 2. ADD TO INVENTORY CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="registerProductModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="regModalTitle">Add Product to Store Inventory</h3>
+        <button class="modal-close-btn" onclick="closeModal('registerProductModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="registerProductForm">
+          <input type="hidden" id="regCatalogueId">
+          <div class="form-group mb-3">
+            <label class="form-label" for="regProductName">Product Name *</label>
+            <input type="text" id="regProductName" class="form-control" required>
+          </div>
+
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="regCategory">Category</label>
+              <input type="text" id="regCategory" class="form-control" placeholder="e.g. Groceries">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="regUnit">Unit</label>
+              <input type="text" id="regUnit" class="form-control" placeholder="piece, kg, packet">
+            </div>
+          </div>
+
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="regSellingPrice">Selling Price (₹) *</label>
+              <input type="number" id="regSellingPrice" class="form-control" step="0.5" min="0.01" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="regPurchasePrice">Purchase Cost (₹)</label>
+              <input type="number" id="regPurchasePrice" class="form-control" step="0.5" min="0" value="0.00">
+            </div>
+          </div>
+
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="regCurrentStock">Initial Stock Quantity *</label>
+              <input type="number" id="regCurrentStock" class="form-control" step="1" min="0" value="10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="regReorderLevel">Reorder Alert Level</label>
+              <input type="number" id="regReorderLevel" class="form-control" step="1" min="1" value="5">
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label" for="regBarcode">Barcode (EAN-13 / UPC)</label>
+            <input type="text" id="regBarcode" class="form-control" placeholder="Optional barcode number">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('registerProductModal')">Cancel</button>
+        <button class="btn btn-success" id="confirmRegisterProductBtn">Confirm & Save to Inventory</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 3. EDIT INVENTORY PRODUCT MODAL -->
+  <div class="modal-overlay" id="editProductModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Store Product</h3>
+        <button class="modal-close-btn" onclick="closeModal('editProductModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editProductForm">
+          <input type="hidden" id="editProductId">
+          <div class="form-group mb-3">
+            <label class="form-label" for="editProductName">Product Name *</label>
+            <input type="text" id="editProductName" class="form-control" required>
+          </div>
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="editCategory">Category</label>
+              <input type="text" id="editCategory" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editUnit">Unit</label>
+              <input type="text" id="editUnit" class="form-control">
+            </div>
+          </div>
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="editSellingPrice">Selling Price (₹) *</label>
+              <input type="number" id="editSellingPrice" class="form-control" step="0.5" min="0.01" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editPurchasePrice">Purchase Cost (₹)</label>
+              <input type="number" id="editPurchasePrice" class="form-control" step="0.5" min="0">
+            </div>
+          </div>
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="editCurrentStock">Current Stock</label>
+              <input type="number" id="editCurrentStock" class="form-control" step="0.5" min="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editReorderLevel">Reorder Level</label>
+              <input type="number" id="editReorderLevel" class="form-control" step="1" min="1">
+            </div>
+          </div>
+          <div class="grid-2-col mb-3">
+            <div class="form-group">
+              <label class="form-label" for="editBarcode">Barcode</label>
+              <input type="text" id="editBarcode" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editIsActive">Status</label>
+              <select id="editIsActive" class="form-control">
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('editProductModal')">Cancel</button>
+        <button class="btn btn-primary" id="confirmEditProductBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 4. RECORD EXPENSE MODAL -->
+  <div class="modal-overlay" id="addExpenseModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Record Shop Expense</h3>
+        <button class="modal-close-btn" onclick="closeModal('addExpenseModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addExpenseForm">
+          <div class="form-group mb-3">
+            <label class="form-label" for="expDate">Expense Date</label>
+            <input type="date" id="expDate" class="form-control" required>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label" for="expCategory">Expense Category *</label>
+            <select id="expCategory" class="form-control" required>
+              <option value="Electricity">Electricity Bill</option>
+              <option value="Shop Rent">Shop Rent</option>
+              <option value="Packaging & Bags">Packaging & Polythene Bags</option>
+              <option value="Salary & Wages">Staff Wages</option>
+              <option value="Transportation">Transport & Delivery</option>
+              <option value="Maintenance">Shop Repairs & Maintenance</option>
+              <option value="Tea & Refreshments">Tea & Refreshments</option>
+              <option value="General">Other Miscellaneous Expense</option>
+            </select>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label" for="expAmount">Amount (₹) *</label>
+            <input type="number" id="expAmount" class="form-control" min="1" step="0.5" required>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label" for="expDesc">Description / Note</label>
+            <input type="text" id="expDesc" class="form-control" placeholder="e.g. October shop electricity paid">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('addExpenseModal')">Cancel</button>
+        <button class="btn btn-primary" id="confirmAddExpenseBtn">Save Expense</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 5. RECORD PURCHASE INVOICE MODAL -->
+  <div class="modal-overlay" id="addPurchaseModal" style="display:none;">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h3>Record Supplier Purchase Invoice</h3>
+        <button class="modal-close-btn" onclick="closeModal('addPurchaseModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-2-col mb-3">
+          <div class="form-group">
+            <label class="form-label" for="purSupplierName">Supplier / Vendor Name *</label>
+            <input type="text" id="purSupplierName" class="form-control" placeholder="e.g. Wholesale Grains Mart" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="purDate">Purchase Date</label>
+            <input type="date" id="purDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label">Add Product to Purchase Invoice</label>
+          <div class="purchase-item-picker-row">
+            <select id="purProductSelect" class="form-control flex-2">
+              <option value="">Select product to replenish stock...</option>
+            </select>
+            <input type="number" id="purItemQty" class="form-control" placeholder="Qty" min="1" step="1">
+            <input type="number" id="purItemCost" class="form-control" placeholder="Unit Cost (₹)" min="0" step="0.5">
+            <button class="btn btn-primary" id="purAddItemBtn">+ Add</button>
+          </div>
+        </div>
+
+        <div class="table-responsive mb-3">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Cost (₹)</th>
+                <th>Total (₹)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="purItemsTableBody">
+              <tr><td colspan="5" class="text-center text-muted">No items added to invoice yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-row highlight font-bold">
+          <span>Total Purchase Invoice Value:</span>
+          <span id="purInvoiceTotal">₹0.00</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('addPurchaseModal')">Cancel</button>
+        <button class="btn btn-success" id="confirmAddPurchaseBtn">Save Invoice & Update Stock</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 6. MASTER CATALOGUE BROWSER MODAL -->
+  <div class="modal-overlay" id="catalogueBrowserModal" style="display:none;">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h3>Master Product Catalogue</h3>
+        <button class="modal-close-btn" onclick="closeModal('catalogueBrowserModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <input type="text" id="catBrowserSearch" class="form-control"
+                 placeholder="Search catalogue by product name, brand, or barcode...">
+        </div>
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Package</th>
+                <th>Barcode</th>
+                <th>Source</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="catalogueBrowserTableBody">
+              <tr><td colspan="7" class="text-center text-muted py-4">Loading catalogue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('catalogueBrowserModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. LIVE WEBCAM BARCODE SCANNER MODAL -->
+  <div class="modal-overlay" id="webcamScannerModal" style="display:none;">
+    <div class="modal-card scanner-modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 Live Webcam Barcode Scanner</h3>
+        <button class="modal-close-btn" id="closeWebcamScannerBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="webcam-viewport-wrap">
+          <video id="webcamVideoFeed" autoplay playsinline muted></video>
+          <canvas id="webcamCanvas" style="display:none;"></canvas>
+          <div class="webcam-scanner-overlay">
+            <div class="webcam-target-box">
+              <div class="webcam-laser-line"></div>
+            </div>
+          </div>
+        </div>
+        <div class="webcam-status-box mt-3" id="webcamScannerStatus">
+          <span>Starting camera... Hold product barcode steady inside the target box.</span>
+        </div>
+        <div class="webcam-scanner-tips mt-2 text-muted text-sm">
+          💡 <strong>Tips for clear scanning:</strong> Hold the barcode 15–25 cm (6–10 inches) from camera. Tilt slightly to avoid glare from plastic packaging. Ensure room lighting is bright.
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn btn-outline btn-sm" id="switchCameraBtn" style="display:none;">🔄 Switch Camera</button>
+        <button class="btn btn-danger" id="stopCameraBtn">⏹️ Stop & Close Camera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- APPLICATION SCRIPTS -->
+  <script src="/static/js/voice.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

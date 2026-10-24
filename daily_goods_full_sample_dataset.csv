@@ -1,0 +1,64 @@
+barcode,product_name,brand,category,pack_size,mrp_inr,selling_price_inr,purchase_cost_per_unit_inr,stock_quantity,low_stock_limit,supplier,batch_number,manufacture_date,expiry_date,tax_rate_percent,stock_value_at_cost_inr,potential_sales_value_inr,barcode_type
+DGDEMO000001,Rice,Generic / sample,Staples,1 kg,65,65,45,120,35,Sample Supplier,BATCH0001,2026-01-01,2027-06-30,0,5400,7800,Synthetic demo code - not a verified retail barcode
+DGDEMO000002,Basmati Rice,Generic / sample,Staples,1 kg,110,110,78,45,12,Sample Supplier,BATCH0002,2026-01-01,2027-05-31,0,3510,4950,Synthetic demo code - not a verified retail barcode
+DGDEMO000003,Wheat Flour (Atta),Generic / sample,Staples,1 kg,48,48,32,80,25,Sample Supplier,BATCH0003,2026-01-01,2027-04-30,0,2560,3840,Synthetic demo code - not a verified retail barcode
+DGDEMO000004,Maida,Generic / sample,Staples,500 g,28,28,18,60,20,Sample Supplier,BATCH0004,2026-01-01,2027-03-31,0,1080,1680,Synthetic demo code - not a verified retail barcode
+DGDEMO000005,Rava / Sooji,Generic / sample,Staples,500 g,32,32,21,55,16,Sample Supplier,BATCH0005,2026-01-01,2027-05-31,0,1155,1760,Synthetic demo code - not a verified retail barcode
+DGDEMO000006,Poha,Generic / sample,Staples,500 g,38,38,25,40,14,Sample Supplier,BATCH0006,2026-01-01,2027-04-30,0,1000,1520,Synthetic demo code - not a verified retail barcode
+DGDEMO000007,Vermicelli,Generic / sample,Staples,200 g,22,22,13,70,20,Sample Supplier,BATCH0007,2026-01-01,2027-07-31,0,910,1540,Synthetic demo code - not a verified retail barcode
+DGDEMO000008,Toor Dal,Generic / sample,Pulses & Dal,1 kg,155,155,112,50,15,Sample Supplier,BATCH0008,2026-01-01,2027-04-30,0,5600,7750,Synthetic demo code - not a verified retail barcode
+DGDEMO000009,Moong Dal,Generic / sample,Pulses & Dal,1 kg,125,125,88,35,10,Sample Supplier,BATCH0009,2026-01-01,2027-05-31,0,3080,4375,Synthetic demo code - not a verified retail barcode
+DGDEMO000010,Urad Dal,Generic / sample,Pulses & Dal,1 kg,120,120,84,30,8,Sample Supplier,BATCH0010,2026-01-01,2027-03-31,0,2520,3600,Synthetic demo code - not a verified retail barcode
+DGDEMO000011,Chana Dal,Generic / sample,Pulses & Dal,1 kg,90,90,61,42,12,Sample Supplier,BATCH0011,2026-01-01,2027-06-30,0,2562,3780,Synthetic demo code - not a verified retail barcode
+DGDEMO000012,Masoor Dal,Generic / sample,Pulses & Dal,1 kg,105,105,73,28,7,Sample Supplier,BATCH0012,2026-01-01,2027-04-30,0,2044,2940,Synthetic demo code - not a verified retail barcode
+DGDEMO000013,Chickpeas,Generic / sample,Pulses & Dal,500 g,65,65,44,32,9,Sample Supplier,BATCH0013,2026-01-01,2027-05-31,0,1408,2080,Synthetic demo code - not a verified retail barcode
+DGDEMO000014,Rajma,Generic / sample,Pulses & Dal,500 g,75,75,52,25,6,Sample Supplier,BATCH0014,2026-01-01,2027-06-30,0,1300,1875,Synthetic demo code - not a verified retail barcode
+DGDEMO000015,Sunflower Oil,Generic / sample,Cooking Essentials,1 L,145,145,112,60,18,Sample Supplier,BATCH0015,2026-01-01,2027-08-31,0,6720,8700,Synthetic demo code - not a verified retail barcode
+DGDEMO000016,Groundnut Oil,Generic / sample,Cooking Essentials,1 L,180,180,142,25,7,Sample Supplier,BATCH0016,2026-01-01,2027-09-30,0,3550,4500,Synthetic demo code - not a verified retail barcode
+DGDEMO000017,Ghee,Generic / sample,Cooking Essentials,200 ml,145,145,108,20,6,Sample Supplier,BATCH0017,2026-01-01,2027-05-31,0,2160,2900,Synthetic demo code - not a verified retail barcode
+DGDEMO000018,Salt,Generic / sample,Cooking Essentials,1 kg,22,22,12,100,32,Sample Supplier,BATCH0018,2026-01-01,2028-12-31,0,1200,2200,Synthetic demo code - not a verified retail barcode
+DGDEMO000019,Sugar,Generic / sample,Cooking Essentials,1 kg,45,45,31,90,28,Sample Supplier,BATCH0019,2026-01-01,2027-12-31,0,2790,4050,Synthetic demo code - not a verified retail barcode
+DGDEMO000020,Jaggery,Generic / sample,Cooking Essentials,500 g,40,40,27,35,10,Sample Supplier,BATCH0020,2026-01-01,2027-08-31,0,945,1400,Synthetic demo code - not a verified retail barcode
+DGDEMO000021,Turmeric Powder,Generic / sample,Spices & Masala,100 g,35,35,23,40,12,Sample Supplier,BATCH0021,2026-01-01,2027-09-30,0,920,1400,Synthetic demo code - not a verified retail barcode
+DGDEMO000022,Chilli Powder,Generic / sample,Spices & Masala,100 g,42,42,29,38,10,Sample Supplier,BATCH0022,2026-01-01,2027-08-31,0,1102,1596,Synthetic demo code - not a verified retail barcode
+DGDEMO000023,Coriander Powder,Generic / sample,Spices & Masala,100 g,32,32,21,35,9,Sample Supplier,BATCH0023,2026-01-01,2027-10-31,0,735,1120,Synthetic demo code - not a verified retail barcode
+DGDEMO000024,Cumin Seeds,Generic / sample,Spices & Masala,100 g,45,45,30,25,7,Sample Supplier,BATCH0024,2026-01-01,2027-11-30,0,750,1125,Synthetic demo code - not a verified retail barcode
+DGDEMO000025,Garam Masala,Generic / sample,Spices & Masala,100 g,55,55,37,22,6,Sample Supplier,BATCH0025,2026-01-01,2027-07-31,0,814,1210,Synthetic demo code - not a verified retail barcode
+DGDEMO000026,Biryani Masala,Generic / sample,Spices & Masala,50 g,35,35,22,30,9,Sample Supplier,BATCH0026,2026-01-01,2027-08-31,0,660,1050,Synthetic demo code - not a verified retail barcode
+DGDEMO000027,Biscuits,Generic / sample,Snacks,100 g,20,20,12,100,30,Sample Supplier,BATCH0027,2026-01-01,2027-04-30,5,1200,2000,Synthetic demo code - not a verified retail barcode
+DGDEMO000028,Cream Biscuits,Generic / sample,Snacks,100 g,30,30,19,45,12,Sample Supplier,BATCH0028,2026-01-01,2027-03-31,5,855,1350,Synthetic demo code - not a verified retail barcode
+DGDEMO000029,Potato Chips,Generic / sample,Snacks,50 g,20,20,12,70,24,Sample Supplier,BATCH0029,2026-01-01,2027-02-28,5,840,1400,Synthetic demo code - not a verified retail barcode
+DGDEMO000030,Namkeen,Generic / sample,Snacks,200 g,55,55,36,30,8,Sample Supplier,BATCH0030,2026-01-01,2027-03-31,5,1080,1650,Synthetic demo code - not a verified retail barcode
+DGDEMO000031,Chocolate Bar,Generic / sample,Snacks,40 g,25,25,15,60,20,Sample Supplier,BATCH0031,2026-01-01,2027-05-31,5,900,1500,Synthetic demo code - not a verified retail barcode
+DGDEMO000032,Instant Noodles,Generic / sample,Packaged Foods,70 g,15,15,9,120,40,Sample Supplier,BATCH0032,2026-01-01,2027-05-31,5,1080,1800,Synthetic demo code - not a verified retail barcode
+DGDEMO000033,Pasta,Generic / sample,Packaged Foods,500 g,65,65,43,25,7,Sample Supplier,BATCH0033,2026-01-01,2027-08-31,5,1075,1625,Synthetic demo code - not a verified retail barcode
+DGDEMO000034,Tomato Ketchup,Generic / sample,Packaged Foods,500 g,95,95,66,20,6,Sample Supplier,BATCH0034,2026-01-01,2027-01-31,5,1320,1900,Synthetic demo code - not a verified retail barcode
+DGDEMO000035,Pickle,Generic / sample,Packaged Foods,300 g,85,85,59,18,5,Sample Supplier,BATCH0035,2026-01-01,2027-04-30,5,1062,1530,Synthetic demo code - not a verified retail barcode
+DGDEMO000036,Milk,Generic / sample,Dairy,500 ml,32,32,24,30,8,Sample Supplier,BATCH0036,2026-01-01,2026-10-25,5,720,960,Synthetic demo code - not a verified retail barcode
+DGDEMO000037,Curd,Generic / sample,Dairy,500 g,35,35,26,24,7,Sample Supplier,BATCH0037,2026-01-01,2026-10-25,5,624,840,Synthetic demo code - not a verified retail barcode
+DGDEMO000038,Butter,Generic / sample,Dairy,100 g,58,58,41,15,4,Sample Supplier,BATCH0038,2026-01-01,2026-11-30,5,615,870,Synthetic demo code - not a verified retail barcode
+DGDEMO000039,Cheese Slices,Generic / sample,Dairy,200 g,120,120,88,12,3,Sample Supplier,BATCH0039,2026-01-01,2026-11-15,5,1056,1440,Synthetic demo code - not a verified retail barcode
+DGDEMO000040,Eggs,Generic / sample,Dairy & Eggs,6 pack,48,48,36,25,8,Sample Supplier,BATCH0040,2026-01-01,2026-10-30,0,900,1200,Synthetic demo code - not a verified retail barcode
+DGDEMO000041,Tea Powder,Generic / sample,Beverages,250 g,120,120,82,30,9,Sample Supplier,BATCH0041,2026-01-01,2027-03-31,5,2460,3600,Synthetic demo code - not a verified retail barcode
+DGDEMO000042,Coffee Powder,Generic / sample,Beverages,100 g,85,85,59,25,7,Sample Supplier,BATCH0042,2026-01-01,2027-02-28,5,1475,2125,Synthetic demo code - not a verified retail barcode
+DGDEMO000043,Bottled Water,Generic / sample,Beverages,1 L,20,20,12,100,32,Sample Supplier,BATCH0043,2026-01-01,2027-10-31,5,1200,2000,Synthetic demo code - not a verified retail barcode
+DGDEMO000044,Soft Drink,Generic / sample,Beverages,750 ml,45,45,29,45,14,Sample Supplier,BATCH0044,2026-01-01,2027-04-30,5,1305,2025,Synthetic demo code - not a verified retail barcode
+DGDEMO000045,Fruit Juice,Generic / sample,Beverages,1 L,110,110,75,20,6,Sample Supplier,BATCH0045,2026-01-01,2027-06-30,5,1500,2200,Synthetic demo code - not a verified retail barcode
+DGDEMO000046,Bath Soap,Generic / sample,Personal Care,100 g,38,38,24,60,18,Sample Supplier,BATCH0046,,,0,1440,2280,Synthetic demo code - not a verified retail barcode
+DGDEMO000047,Shampoo,Generic / sample,Personal Care,180 ml,125,125,86,25,7,Sample Supplier,BATCH0047,,,0,2150,3125,Synthetic demo code - not a verified retail barcode
+DGDEMO000048,Toothpaste,Generic / sample,Personal Care,150 g,95,95,65,30,9,Sample Supplier,BATCH0048,,,0,1950,2850,Synthetic demo code - not a verified retail barcode
+DGDEMO000049,Toothbrush,Generic / sample,Personal Care,1 piece,35,35,20,40,12,Sample Supplier,BATCH0049,,,0,800,1400,Synthetic demo code - not a verified retail barcode
+DGDEMO000050,Face Wash,Generic / sample,Personal Care,100 ml,110,110,72,18,5,Sample Supplier,BATCH0050,,,0,1296,1980,Synthetic demo code - not a verified retail barcode
+DGDEMO000051,Sanitary Pads,Generic / sample,Personal Care,8 pads,45,45,30,30,9,Sample Supplier,BATCH0051,,,0,900,1350,Synthetic demo code - not a verified retail barcode
+DGDEMO000052,Laundry Detergent,Generic / sample,Household,1 kg,110,110,75,40,12,Sample Supplier,BATCH0052,,,0,3000,4400,Synthetic demo code - not a verified retail barcode
+DGDEMO000053,Dishwash Liquid,Generic / sample,Household,500 ml,85,85,57,25,7,Sample Supplier,BATCH0053,,,0,1425,2125,Synthetic demo code - not a verified retail barcode
+DGDEMO000054,Floor Cleaner,Generic / sample,Household,1 L,120,120,81,20,6,Sample Supplier,BATCH0054,,,0,1620,2400,Synthetic demo code - not a verified retail barcode
+DGDEMO000055,Toilet Cleaner,Generic / sample,Household,500 ml,95,95,64,18,5,Sample Supplier,BATCH0055,,,0,1152,1710,Synthetic demo code - not a verified retail barcode
+DGDEMO000056,Garbage Bags,Generic / sample,Household,30 pieces,75,75,48,25,8,Sample Supplier,BATCH0056,,,0,1200,1875,Synthetic demo code - not a verified retail barcode
+DGDEMO000057,Scrubber,Generic / sample,Household,1 piece,20,20,11,35,10,Sample Supplier,BATCH0057,,,0,385,700,Synthetic demo code - not a verified retail barcode
+DGDEMO000058,Almonds,Generic / sample,Dry Fruits & Nuts,100 g,95,95,67,20,5,Sample Supplier,BATCH0058,2026-01-01,2027-06-30,0,1340,1900,Synthetic demo code - not a verified retail barcode
+DGDEMO000059,Cashews,Generic / sample,Dry Fruits & Nuts,100 g,90,90,63,18,4,Sample Supplier,BATCH0059,2026-01-01,2027-05-31,0,1134,1620,Synthetic demo code - not a verified retail barcode
+DGDEMO000060,Raisins,Generic / sample,Dry Fruits & Nuts,100 g,55,55,36,22,6,Sample Supplier,BATCH0060,2026-01-01,2027-07-31,0,792,1210,Synthetic demo code - not a verified retail barcode
+DGDEMO000061,Peanuts,Generic / sample,Dry Fruits & Nuts,200 g,55,55,36,30,9,Sample Supplier,BATCH0061,2026-01-01,2027-02-28,0,1080,1650,Synthetic demo code - not a verified retail barcode
+DGDEMO000062,Honey,Generic / sample,Other Grocery,250 g,145,145,98,15,4,Sample Supplier,BATCH0062,2026-01-01,2027-12-31,0,1470,2175,Synthetic demo code - not a verified retail barcode
+DGDEMO000063,Jam,Generic / sample,Other Grocery,200 g,75,75,49,20,6,Sample Supplier,BATCH0063,2026-01-01,2027-09-30,0,980,1500,Synthetic demo code - not a verified retail barcode
