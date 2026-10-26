@@ -14,15 +14,42 @@ from daily_report import calculate_financial_report
 
 
 def get_db_connection():
-    """Create and return a MySQL database connection using .env configuration."""
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "shopkeeper_ai"),
-        connection_timeout=10
-    )
+    """
+    Create and return a MySQL database connection using .env configuration.
+    Supports either individual variables (DB_HOST, etc.) or connection URI (DATABASE_URL).
+    """
+    db_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+    if db_url:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(db_url)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 3306
+        user = parsed.username or "root"
+        password = urllib.parse.unquote(parsed.password or "")
+        database = parsed.path.lstrip("/") or "shopkeeper_ai"
+    else:
+        host = os.getenv("DB_HOST", "localhost")
+        port = int(os.getenv("DB_PORT", "3306"))
+        user = os.getenv("DB_USER", "root")
+        password = os.getenv("DB_PASSWORD", "")
+        database = os.getenv("DB_NAME", "shopkeeper_ai")
+
+    conn_kwargs = {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "database": database,
+        "connection_timeout": int(os.getenv("DB_TIMEOUT", "10"))
+    }
+
+    ssl_ca = os.getenv("DB_SSL_CA")
+    if ssl_ca and os.path.exists(ssl_ca):
+        conn_kwargs["ssl_ca"] = ssl_ca
+    if os.getenv("DB_SSL_DISABLED", "false").lower() in ("true", "1"):
+        conn_kwargs["ssl_disabled"] = True
+
+    return mysql.connector.connect(**conn_kwargs)
 
 
 def parse_date_period(query_text):

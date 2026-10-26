@@ -22,6 +22,7 @@
 - [Environment Configuration](#environment-configuration)
 - [Database Design](#database-design)
 - [Running the Application](#running-the-application)
+- [Production Deployment (Render & Cloud MySQL)](#production-deployment-render--cloud-mysql)
 - [API Integration](#api-integration)
 - [Security and Data Integrity](#security-and-data-integrity)
 - [Troubleshooting](#troubleshooting)
@@ -447,6 +448,119 @@ http://127.0.0.1:5000
 
 ---
 
+## Production Deployment (Render & Cloud MySQL)
+
+AI Shopkeeper is prepared for seamless production deployment on **Render Web Service** paired with a cloud-hosted MySQL database.
+
+```mermaid
+flowchart LR
+    Browser["User Browser\n(HTTPS: Camera + Mic)"] -->|Requests| Render["Render Web Service\n(gunicorn web_app:app)"]
+    Render -->|SQL / SSL| CloudDB["Cloud MySQL\n(TiDB / Railway / Aiven)"]
+    Render -->|API Calls| GoogleAPI["Google GenAI API\n(gemma-4-31b-it)"]
+```
+
+### 1. Cloud Architecture Overview
+1. **Hosting**: Render Web Service running Python 3.10+ with `gunicorn web_app:app`.
+2. **Database**: A cloud-accessible MySQL 8.0+ instance (e.g. TiDB Cloud Serverless, Railway, or Aiven).
+3. **AI Inference**: Server-to-server calls to Google GenAI API (`gemma-4-31b-it`).
+4. **HTTPS / SSL**: Automatically provided by Render (`https://your-app.onrender.com`), enabling browser camera barcode scanning and microphone speech recognition.
+
+---
+
+### 2. Step 1: Set Up Cloud MySQL Database
+
+Because your laptop's local MySQL (`localhost:3306`) is not accessible from Render's cloud servers, you must use a hosted cloud MySQL database.
+
+#### Recommended Cloud MySQL Providers:
+
+| Provider | Pricing / Free Tier | Key Benefits | Notes |
+| :--- | :--- | :--- | :--- |
+| **TiDB Cloud (Serverless)** *(Recommended)* | **Permanent Free Tier** (5 GB storage, 50M RU/mo free, no credit card required) | 100% MySQL 8.0 compatible, high availability, instant setup | Built-in web SQL console. |
+| **Railway.app** | $5 free trial credit for first month; pay-as-you-go afterwards | 1-click MySQL provisioning, provides direct `DATABASE_URL` | Very fast setup. |
+| **Aiven for MySQL** | 30-day free trial ($300 credit); paid plans start at ~$19/mo | Enterprise-grade managed MySQL with automated backups | Requires plan selection. |
+| **Clever Cloud** | Free shared plan (10 MB storage, 5 connections) | European cloud hosting, simple add-on | Storage limited for larger catalogues. |
+
+#### Database Migration Steps:
+1. Create a free account on [TiDB Cloud](https://tidbcloud.com/) or [Railway](https://railway.app/).
+2. Create a new Serverless MySQL cluster and obtain your connection details:
+   - Host (e.g. `gateway01.ap-southeast-1.prod.aws.tidbcloud.com`)
+   - Port (e.g. `4000` or `3306`)
+   - User (e.g. `your_user.root`)
+   - Password
+   - Database Name (e.g. `shopkeeper_ai` or `test`)
+3. Open your cloud provider's SQL Web Editor (or connect via MySQL Workbench / CLI) and execute:
+   - **`schema.sql`**: Creates all 7 tables (`expenses`, `product_catalogue`, `products`, `purchases`, `purchase_items`, `sales`, `sale_items`).
+   - **`seed_data.sql`**: (Optional) Seeds 17 sample Indian kirana products and catalogue entries.
+
+---
+
+### 3. Step 2: Push Code to GitHub
+
+Ensure all your latest files are committed and pushed to your repository:
+```powershell
+git add .
+git commit -m "Prepare production deployment for Render and Cloud MySQL"
+git push origin main
+```
+
+---
+
+### 4. Step 3: Create Render Web Service
+
+1. Log in to [Render](https://dashboard.render.com/).
+2. Click **New +** ➔ **Web Service**.
+3. Select **Build and deploy from a Git repository** and connect your GitHub repository (`Reshmablue/Reshmablue`).
+4. Configure the service parameters:
+   - **Name**: `ai-shopkeeper` (or your preferred name)
+   - **Region**: Choose the region closest to your users (e.g. *Singapore* or *Frankfurt*)
+   - **Branch**: `main`
+   - **Root Directory**: Leave blank (root of repository)
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn web_app:app`
+   - **Instance Type**: `Free`
+
+---
+
+### 5. Step 4: Configure Environment Variables on Render
+
+In the Render Dashboard under your Web Service's **Environment** tab, add the following variables:
+
+| Key | Example Value | Description |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | `AIzaSy...` | Your Google AI Studio API key for Gemma. |
+| `GEMMA_MODEL` | `gemma-4-31b-it` | Primary AI model identifier. |
+| `GEMMA_FALLBACK_MODEL` | `gemma-4-26b-a4b-it` | Automatic fallback model. |
+| `DB_HOST` | `gateway01.tidbcloud.com` | Cloud MySQL hostname. |
+| `DB_PORT` | `4000` | Cloud MySQL port (e.g. 4000 for TiDB, 3306 for standard MySQL). |
+| `DB_USER` | `xxxxxx.root` | Cloud database username. |
+| `DB_PASSWORD` | `your_secret_password` | Cloud database password. |
+| `DB_NAME` | `shopkeeper_ai` | Target database name. |
+| `SECRET_KEY` | *(Random 32+ char string)* | Secure key for Flask session signing. |
+| `PYTHON_VERSION` | `3.10.14` | (Optional) Render Python version specification. |
+
+> **Note**: If your cloud MySQL provider gave you a single URI instead of individual fields, you can simply set `DATABASE_URL`:
+> `DATABASE_URL=mysql://username:password@hostname:port/database_name`
+
+---
+
+### 6. Step 5: Deploy and Verify
+
+1. Click **Deploy Web Service** (or **Manual Deploy** ➔ **Deploy latest commit**).
+2. Watch the **Logs** tab in Render:
+   - Dependencies from `requirements.txt` will install.
+   - Gunicorn will bind to `0.0.0.0:$PORT`.
+   - The log will display: `[INFO] Listening at: http://0.0.0.0:10000`.
+3. Open your deployed URL: `https://your-service-name.onrender.com`.
+4. Perform the Post-Deployment Verification Checklist:
+   - [ ] **System Health**: Check `/api/settings` to confirm `database_connected: true` and `gemma_configured: true`.
+   - [ ] **Camera Barcode Scan**: Open POS and click **Camera Scan**. Verify browser prompts for camera permission and scans successfully under HTTPS.
+   - [ ] **Billing & Stock Sync**: Add an item, complete checkout with Cash, and verify inventory decrements atomically.
+   - [ ] **AI Chatbot**: Inquire *"What are today's sales?"* in English, Telugu, or Hindi and verify verified database response.
+   - [ ] **Voice Interaction**: Test microphone and speaker responses.
+
+---
+
 ## API Integration
 
 ### Google Gemma Integration
@@ -588,9 +702,7 @@ limitations under the License.
 
 ## Author
 
-Developed by **Shaik Reshma**  
-* Email: [reshmashaik9193@gmail.com](mailto:reshmashaik9193@gmail.com)  
-* GitHub: [@your-github-username](https://github.com/your-github-username)  
-* Project Repository: [https://github.com/your-github-username/ai_shopkeeper](https://github.com/your-github-username/ai_shopkeeper)
-
-*(Please update the GitHub username placeholder with your actual GitHub handle once your repository is created.)*
+Developed by **Shaik Reshma**<br>
+* Email: [reshmashaik9193@gmail.com](mailto:reshmashaik9193@gmail.com)<br>
+* GitHub: [@Reshmablue](https://github.com/Reshmablue)<br>
+* Project Repository: [https://github.com/Reshmablue/Reshmablue](https://github.com/Reshmablue/Reshmablue)

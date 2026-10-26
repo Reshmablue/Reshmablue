@@ -1,13 +1,16 @@
 -- ==============================================================================
 -- AI Shopkeeper - Database Schema Initialization Script
--- Target Database: shopkeeper_ai (MySQL / MariaDB via XAMPP)
+-- MySQL 8.0+ / MariaDB / Cloud MySQL (TiDB Cloud, Railway, Aiven, Clever Cloud)
 -- ==============================================================================
-
-CREATE DATABASE IF NOT EXISTS `shopkeeper_ai`
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_unicode_ci;
-
-USE `shopkeeper_ai`;
+-- LOCAL DEVELOPMENT NOTE:
+-- For local MySQL/XAMPP, uncomment the next two lines to create the database:
+-- CREATE DATABASE IF NOT EXISTS `shopkeeper_ai` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `shopkeeper_ai`;
+--
+-- CLOUD DEPLOYMENT NOTE:
+-- When using cloud MySQL (TiDB, Railway, Aiven), select your provisioned database
+-- (e.g. `test`, `defaultdb`, or `shopkeeper_ai`) before executing these table definitions.
+-- ==============================================================================
 
 -- 1. Operational Expenses
 CREATE TABLE IF NOT EXISTS `expenses` (

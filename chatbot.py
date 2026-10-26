@@ -35,16 +35,17 @@ from shop_analytics import (
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
-PRIMARY_MODEL = "gemma-4-31b-it"
-FALLBACK_MODEL = "gemma-4-26b-a4b-it"
+PRIMARY_MODEL = os.getenv("GEMMA_MODEL", "gemma-4-31b-it")
+FALLBACK_MODEL = os.getenv("GEMMA_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
 
-if not API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY is missing from your .env file."
-    )
-
-# Use standard client initialization without custom http_options to avoid SSL handshake timeout
-client = genai.Client(api_key=API_KEY)
+client = None
+if API_KEY:
+    try:
+        client = genai.Client(api_key=API_KEY)
+    except Exception as e:
+        print(f"[Chatbot] Warning: Failed to initialize Google GenAI client: {e}")
+else:
+    print("[Chatbot] Notice: GEMINI_API_KEY not detected at startup. Will recheck on incoming requests.")
 
 
 # ==================================================
@@ -252,6 +253,18 @@ def ask_gemma(prompt):
     to gemma-4-26b-a4b-it if Google's 31B cluster experiences a temporary 500/503 server error.
     Allows up to 30s request timeout per model to accommodate cloud generation latency.
     """
+    global client
+    if not client:
+        current_key = os.getenv("GEMINI_API_KEY")
+        if not current_key:
+            print("[Chatbot] Warning: GEMINI_API_KEY is not configured in environment.")
+            return None
+        try:
+            client = genai.Client(api_key=current_key)
+        except Exception as e:
+            print(f"[Chatbot] Failed to initialize Google GenAI client: {e}")
+            return None
+
     content = types.Content(
         role="user",
         parts=[types.Part.from_text(text=prompt)]

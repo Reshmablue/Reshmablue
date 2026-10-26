@@ -1,7 +1,8 @@
-# Core Web Framework
+# Core Web Framework & WSGI Production Server
 flask>=3.0.0
+gunicorn>=21.2.0
 
-# AI & Language Models (Google GenAI SDK)
+# AI & Language Models (Google GenAI SDK for Gemma)
 google-genai>=2.0.0
 
 # Database Drivers
@@ -14,11 +15,14 @@ python-dotenv>=1.0.0
 # HTTP Requests (Online Barcode APIs - Open Food Facts)
 requests>=2.31.0
 
-# Computer Vision & Barcode Scanning
-opencv-python>=4.8.0
+# Regional Spoken Text-to-Speech (Telugu, Hindi, Indian English)
+gTTS>=2.5.0
+
+# Computer Vision & Barcode Scanning (Headless build for Linux/Render cloud)
+opencv-python-headless>=4.8.0
 zxing-cpp>=2.2.0
 numpy>=1.24.0
 pillow>=10.0.0
 
-# Data Processing & Catalogue Import
+# Data Processing & Catalogue Management
 pandas>=2.0.0

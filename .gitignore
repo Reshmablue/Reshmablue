@@ -1,3 +1,8 @@
+# ==============================================================================
+# AI Shopkeeper Assistant - Git Ignore Rules
+# Excludes sensitive secrets, virtual environments, caches, and local dumps.
+# ==============================================================================
+
 # Environment variables and secrets
 .env
 .env.*
@@ -15,10 +20,14 @@ __pycache__/
 *$py.class
 .pytest_cache/
 .coverage
+htmlcov/
 
-# Logs and databases
+# Logs and runtime artifacts
 *.log
 *.sqlite3
+*.dump
+*.sql.bak
+shop_settings.json
 
 # IDE and OS files
 .vscode/

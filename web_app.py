@@ -93,20 +93,49 @@ app = Flask(
     static_folder=os.path.join(base_dir, "static")
 )
 app.config["JSON_AS_ASCII"] = False
+app.secret_key = os.getenv("SECRET_KEY", "ai-shopkeeper-production-secret-key-change-me")
 
 SETTINGS_FILE = os.path.join(base_dir, "shop_settings.json")
 
 
 def get_db():
-    """Create a MySQL connection using verified environment credentials."""
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "shopkeeper_ai"),
-        connection_timeout=10
-    )
+    """
+    Create a MySQL connection using verified environment credentials.
+    Supports either individual variables (DB_HOST, DB_USER, etc.)
+    or full connection strings (DATABASE_URL / MYSQL_URL) for cloud deployment.
+    """
+    db_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+    if db_url:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(db_url)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 3306
+        user = parsed.username or "root"
+        password = urllib.parse.unquote(parsed.password or "")
+        database = parsed.path.lstrip("/") or "shopkeeper_ai"
+    else:
+        host = os.getenv("DB_HOST", "localhost")
+        port = int(os.getenv("DB_PORT", "3306"))
+        user = os.getenv("DB_USER", "root")
+        password = os.getenv("DB_PASSWORD", "")
+        database = os.getenv("DB_NAME", "shopkeeper_ai")
+
+    conn_kwargs = {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "database": database,
+        "connection_timeout": int(os.getenv("DB_TIMEOUT", "10"))
+    }
+
+    ssl_ca = os.getenv("DB_SSL_CA")
+    if ssl_ca and os.path.exists(ssl_ca):
+        conn_kwargs["ssl_ca"] = ssl_ca
+    if os.getenv("DB_SSL_DISABLED", "false").lower() in ("true", "1"):
+        conn_kwargs["ssl_disabled"] = True
+
+    return mysql.connector.connect(**conn_kwargs)
 
 
 def serialize_val(val: Any) -> Any:
@@ -1384,7 +1413,7 @@ def api_get_settings():
         "tables_count": 0,
         "active_products": 0,
         "gemma_configured": bool(os.getenv("GEMINI_API_KEY")),
-        "model_name": "gemma-4-31b-it"
+        "model_name": os.getenv("GEMMA_MODEL", "gemma-4-31b-it")
     }
 
     conn = None
@@ -1438,10 +1467,12 @@ def api_update_settings():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
+    host = os.getenv("HOST", "0.0.0.0" if os.getenv("RENDER") else "127.0.0.1")
+    model_name = os.getenv("GEMMA_MODEL", "gemma-4-31b-it")
     print(f"\n=======================================================")
     print(f"  AI SHOPKEEPER ASSISTANT - WEB APPLICATION STARTED")
-    print(f"  URL: http://127.0.0.1:{port}")
+    print(f"  URL: http://{host}:{port}")
     print(f"  Database: {os.getenv('DB_NAME', 'shopkeeper_ai')} on MySQL")
-    print(f"  Gemma Model: gemma-4-31b-it")
+    print(f"  Gemma Model: {model_name}")
     print(f"=======================================================\n")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    app.run(host=host, port=port, debug=False)
